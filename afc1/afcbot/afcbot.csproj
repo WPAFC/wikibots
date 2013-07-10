@@ -32,6 +32,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Main.cs">
@@ -40,6 +45,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="Task4.cs" />
+    <Compile Include="dnwb.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

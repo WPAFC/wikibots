@@ -17,6 +17,7 @@ namespace afcbot
 		public static void Main (string[] args)
 		{
 			Log ("Afc bot v. 2.0.0");
+			Configuration.Read();
 		}
 	}
 }
