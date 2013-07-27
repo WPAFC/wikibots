@@ -23,7 +23,7 @@ namespace afcbot
 			Log ("Connecting to wiki");
 			en = new DotNetWikiBot.Site("en.wikipedia.org", Configuration.UserName, Configuration.Password);
 			Log ("Initializing all tasks");
-			Task4.Init();
+			Task4.exec();
 		}
 	}
 }
