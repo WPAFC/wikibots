@@ -52,6 +52,7 @@ namespace afcbot
 				}
 		    }
 			MainClass.Log("end");
+		}
 	}
 }
 
