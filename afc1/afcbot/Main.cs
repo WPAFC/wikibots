@@ -4,6 +4,8 @@ namespace afcbot
 {
 	class MainClass
 	{
+		public static DotNetWikiBot.Site en = null;
+
 		public static void Log(string text)
 		{
 			Console.WriteLine (DateTime.Now.ToString () + ": " + text);
@@ -18,6 +20,10 @@ namespace afcbot
 		{
 			Log ("Afc bot v. 2.0.0");
 			Configuration.Read();
+			Log ("Connecting to wiki");
+			en = new DotNetWikiBot.Site("en.wikipedia.org", Configuration.UserName, Configuration.Password);
+			Log ("Initializing all tasks");
+			Task4.Init();
 		}
 	}
 }
