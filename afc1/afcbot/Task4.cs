@@ -32,6 +32,10 @@ namespace afcbot
 			}
 			foreach (string c in line)
 			{
+				if (ignorelist.Contains(c))
+				{
+					continue;
+				}
 				try
 				{
 					Page afc = new Page(MainClass.en, "Wikipedia talk:" + c);
