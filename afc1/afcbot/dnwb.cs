@@ -1604,7 +1604,6 @@ namespace DotNetWikiBot
             {
                 File.WriteAllText("data", Site.last);
                 Console.WriteLine("Dumped");
-                Environment.Exit(1);
                 throw new WikiBotException(
                     string.Format(Bot.Msg("Session token NULL \"{0}\"."), title));
             }
