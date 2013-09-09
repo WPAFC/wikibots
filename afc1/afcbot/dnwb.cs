@@ -115,10 +115,10 @@ namespace DotNetWikiBot
 		public static Regex editSessionTimeRE3 = new Regex(" touched=\"(.+?)\"");
 		/// <summary>Regular expression to extract edit session token attribute.</summary>
 		public static Regex editSessionTokenRE1 =
-			new Regex("value=\"([^\"]*?)\" name=['\"]wpEditToken['\"]");
+			new Regex("value=\"([^\"]*?)\" name=['\"]edittoken['\"]");
 		/// <summary>Regular expression to extract edit session token attribute.</summary>
 		public static Regex editSessionTokenRE2 =
-			new Regex("name=['\"]wpEditToken['\"](?: type=\"hidden\")? value=\"([^\"]*?)\"");
+            new Regex("name=['\"]edittoken['\"](?: type=\"hidden\")? value=\"([^\"]*?)\"");
 		/// <summary>Regular expression to extract edit session token attribute.</summary>
 		public static Regex editSessionTokenRE3 = new Regex(" edittoken=\"(.+?)\"");
 		/// <summary>Site cookies.</summary>
