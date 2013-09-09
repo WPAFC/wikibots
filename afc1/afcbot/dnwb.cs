@@ -1579,15 +1579,29 @@ namespace DotNetWikiBot
 				throw new WikiBotException(string.Format(Bot.Msg(
 					"Bot action on \"{0}\" page is prohibited " +
 					"by \"nobots\" or \"bots|allow=none\" template."), title));
-			
-			if (Bot.useBotQuery == true && site.botQuery == true &&
-			    (site.ver.Major > 1 || (site.ver.Major == 1 && site.ver.Minor >= 15)))
-				GetEditSessionDataEx();
-			else
-				GetEditSessionData();
-			if (string.IsNullOrEmpty(editSessionTime) || string.IsNullOrEmpty(editSessionToken))
-				throw new WikiBotException(
-					string.Format(Bot.Msg("Insufficient rights to edit page \"{0}\"."), title));
+
+            if (Bot.useBotQuery == true && site.botQuery == true &&
+                (site.ver.Major > 1 || (site.ver.Major == 1 && site.ver.Minor >= 15)))
+            {
+                GetEditSessionDataEx();
+            }
+            else
+            {
+                GetEditSessionData();
+            }
+
+            if (string.IsNullOrEmpty(editSessionTime))
+            {
+                throw new WikiBotException(
+                    string.Format(Bot.Msg("Session time NULL \"{0}\"."), title));
+            }
+
+            if (string.IsNullOrEmpty(editSessionToken))
+            {
+                throw new WikiBotException(
+                    string.Format(Bot.Msg("Session token NULL \"{0}\"."), title));
+            }
+
 			string postData = string.Format("wpSection=&wpStarttime={0}&wpEdittime={1}" +
 			                                "&wpScrolltop=&wpTextbox1={2}&wpSummary={3}&wpSave=Save%20Page" +
 			                                "&wpEditToken={4}{5}{6}",

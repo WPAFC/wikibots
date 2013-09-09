@@ -67,7 +67,7 @@ namespace afcbot
 				catch (Exception fail)
 				{
 					Console.WriteLine(fail.ToString());
-					System.IO.File.AppendAllText("errors", c + "." + Environment.NewLine);
+					System.IO.File.AppendAllText("errors", c + Environment.NewLine);
 				}
 			}
 			MainClass.Log("end");
