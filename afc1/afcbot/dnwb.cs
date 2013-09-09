@@ -10,6 +10,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Text;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Collections;
 using System.Collections.Specialized;
@@ -17,6 +18,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Xml;
 using System.Xml.XPath;
+using System.Net.Security;
 using System.Web;
 
 namespace DotNetWikiBot
@@ -1059,7 +1061,7 @@ namespace DotNetWikiBot
 			settings.IgnoreComments = true;
 			settings.IgnoreProcessingInstructions = true;
 			settings.IgnoreWhitespace = true;
-			settings.ProhibitDtd = false;	// for .NET 4.0 and higher change this line to
+			settings.DtdProcessing =  DtdProcessing.Parse;	// for .NET 4.0 and higher change this line to
 			// settings.DtdProcessing = DtdProcessing.Parse;
 			return XmlReader.Create(strReader, settings);
 		}
@@ -4545,7 +4547,12 @@ namespace DotNetWikiBot
 		/// <summary>Initial state of HttpWebRequestElement.UseUnsafeHeaderParsing boolean
 		/// configuration setting. 0 means true, 1 means false, 2 means unchanged.</summary>
 		public static int unsafeHttpHeaderParsingUsed = 2;
-		
+
+        private static bool ValidateServerCertficate( object sender,   X509Certificate cert,   X509Chain chain,  SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
+        }
+
 		/// <summary>This constructor is used to generate Bot object.</summary>
 		/// <returns>Returns Bot object.</returns>
 		static Bot()
