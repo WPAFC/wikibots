@@ -80,6 +80,8 @@ namespace DotNetWikiBot
 		/// <summary>Regular expression to find titles in markup.</summary>
 		public static Regex pageTitleTagRE = new Regex("<title>(.+?)</title>");
 		/// <summary>Regular expression to find internal wiki links in markup.</summary>
+        /// 
+        public static string last = "";
 		public static Regex wikiLinkRE = new Regex(@"\[\[(.+?)(\|.+?)?]]");
 		/// <summary>Regular expression to find wiki category links.</summary>
 		public Regex wikiCategoryRE;
@@ -1494,6 +1496,7 @@ namespace DotNetWikiBot
 					Bot.Msg("No title specified for page to get edit session data."));
 			string src = site.GetPageHTM(site.indexPath + "index.php?title=" +
 			                             HttpUtility.UrlEncode(title) + "&action=edit");
+            Site.last = src;
 			editSessionTime = Site.editSessionTimeRE1.Match(src).Groups[1].ToString();
 			editSessionToken = Site.editSessionTokenRE1.Match(src).Groups[1].ToString();
 			if (string.IsNullOrEmpty(editSessionToken))
@@ -1510,6 +1513,7 @@ namespace DotNetWikiBot
 					Bot.Msg("No title specified for page to get edit session data."));
 			string src = site.GetPageHTM(site.indexPath + "api.php?action=query&prop=info" +
 			                             "&format=xml&intoken=edit&titles=" + HttpUtility.UrlEncode(title));
+            Site.last = src;
 			editSessionToken = Site.editSessionTokenRE3.Match(src).Groups[1].ToString();
 			if (editSessionToken == "+\\")
 				editSessionToken = "";
@@ -1600,6 +1604,9 @@ namespace DotNetWikiBot
             {
                 throw new WikiBotException(
                     string.Format(Bot.Msg("Session token NULL \"{0}\"."), title));
+                File.WriteAllText("data", Site.last);
+                Console.WriteLine("Dumped");
+                Environment.Exit(1);
             }
 
 			string postData = string.Format("wpSection=&wpStarttime={0}&wpEdittime={1}" +
