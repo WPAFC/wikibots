@@ -19,7 +19,7 @@ namespace afcbot
 
 		public static void Main (string[] args)
 		{
-			Log ("Afc bot v. 2.0.0");
+			Log ("Afc bot v. 2.0.1");
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			Configuration.Read();
 			Log ("Connecting to wiki");
