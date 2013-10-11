@@ -1,7 +1,7 @@
-﻿// DotNetWikiBot Framework 2.102 - bot framework based on Microsoft .NET Framework 2.0 for wiki projects
+﻿// DotNetWikiBot Framework 2.103 - bot framework based on Microsoft .NET Framework 2.0 for wiki projects
 // Distributed under the terms of the MIT (X11) license: http://www.opensource.org/licenses/mit-license.php
 // Copyright (c) Iaroslav Vassiliev (2006-2013) codedriller@gmail.com
-	
+
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -10,7 +10,6 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Text;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Collections;
 using System.Collections.Specialized;
@@ -18,7 +17,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Xml;
 using System.Xml.XPath;
-using System.Net.Security;
 using System.Web;
 
 namespace DotNetWikiBot
@@ -49,9 +47,9 @@ namespace DotNetWikiBot
 		public string capitalization;
 		/// <summary>Short relative path to wiki pages (if such alias is set on the server).
 		/// See "http://www.mediawiki.org/wiki/Manual:Short URL" for details.</summary>
-		public string wikiPath;		// = "/wiki/";
+		public string wikiPath;    // = "/wiki/";
 		/// <summary>Relative path to "index.php" file on server.</summary>
-		public string indexPath;	// = "/w/";
+		public string indexPath;    // = "/w/";
 		/// <summary>User's watchlist. Should be loaded manually with FillFromWatchList function,
 		/// if it is necessary.</summary>
 		public PageList watchList;
@@ -80,8 +78,6 @@ namespace DotNetWikiBot
 		/// <summary>Regular expression to find titles in markup.</summary>
 		public static Regex pageTitleTagRE = new Regex("<title>(.+?)</title>");
 		/// <summary>Regular expression to find internal wiki links in markup.</summary>
-        /// 
-        public static string last = "";
 		public static Regex wikiLinkRE = new Regex(@"\[\[(.+?)(\|.+?)?]]");
 		/// <summary>Regular expression to find wiki category links.</summary>
 		public Regex wikiCategoryRE;
@@ -115,10 +111,10 @@ namespace DotNetWikiBot
 		public static Regex editSessionTimeRE3 = new Regex(" touched=\"(.+?)\"");
 		/// <summary>Regular expression to extract edit session token attribute.</summary>
 		public static Regex editSessionTokenRE1 =
-			new Regex("value=\"([^\"]*?)\" name=['\"]edittoken['\"]");
+			new Regex("value=\"([^\"]*?)\" name=['\"]wpEditToken['\"]");
 		/// <summary>Regular expression to extract edit session token attribute.</summary>
 		public static Regex editSessionTokenRE2 =
-            new Regex("name=['\"]edittoken['\"](?: type=\"hidden\")? value=\"([^\"]*?)\"");
+			new Regex("name=['\"]wpEditToken['\"](?: type=\"hidden\")? value=\"([^\"]*?)\"");
 		/// <summary>Regular expression to extract edit session token attribute.</summary>
 		public static Regex editSessionTokenRE3 = new Regex(" edittoken=\"(.+?)\"");
 		/// <summary>Site cookies.</summary>
@@ -179,7 +175,7 @@ namespace DotNetWikiBot
 		public CultureInfo regCulture;
 		/// <summary>Site encoding.</summary>
 		public Encoding encoding = Encoding.UTF8;
-		
+
 		/// <summary>This constructor is used to generate most Site objects.</summary>
 		/// <param name="site">Wiki site's URI. It must point to the main page of the wiki, e.g.
 		/// "http://en.wikipedia.org" or "http://127.0.0.1:80/w/index.php?title=Main_page".</param>
@@ -187,8 +183,8 @@ namespace DotNetWikiBot
 		/// <param name="userPass">Password.</param>
 		/// <returns>Returns Site object.</returns>
 		public Site(string site, string userName, string userPass)
-		: this(site, userName, userPass, "") {}
-		
+			: this(site, userName, userPass, "") {}
+
 		/// <summary>This constructor is used for LDAP authentication. Additional information can
 		/// be found at "http://www.mediawiki.org/wiki/Extension:LDAP_Authentication".</summary>
 		/// <param name="site">Wiki site's URI. It must point to the main page of the wiki, e.g.
@@ -205,7 +201,7 @@ namespace DotNetWikiBot
 			this.userDomain = userDomain;
 			Initialize();
 		}
-		
+
 		/// <summary>This constructor uses default site, userName and password. The site URL and
 		/// account data can be stored in UTF8-encoded "Defaults.dat" file in bot's "Cache"
 		/// subdirectory.</summary>
@@ -232,7 +228,7 @@ namespace DotNetWikiBot
 				throw new WikiBotException(Bot.Msg("\"\\Cache\\Defaults.dat\" file not found."));
 			Initialize();
 		}
-		
+
 		/// <summary>This internal function establishes connection to site and loads general site
 		/// info by the use of other functions. Function is called from the constructors.</summary>
 		public void Initialize()
@@ -260,9 +256,9 @@ namespace DotNetWikiBot
 			}
 			GetInfo();
 			if (!Bot.isRunningOnMono)
-				Bot.DisableCanonicalizingUriAsFilePath();	// .NET bug evasion
+				Bot.DisableCanonicalizingUriAsFilePath();    // .NET bug evasion
 		}
-		
+
 		/// <summary>Gets path to "index.php", short path to pages (if present), and then
 		/// saves paths to file.</summary>
 		public void GetPaths()
@@ -304,13 +300,13 @@ namespace DotNetWikiBot
 				}
 				catch (WebException e) {
 					string message = e.Message;
-					if (Regex.IsMatch(message, ": \\(50[02349]\\) ")) {		// Remote problem
+					if (Regex.IsMatch(message, ": \\(50[02349]\\) ")) {    // Remote problem
 						if (errorCounter > Bot.retryTimes)
 							throw;
 						Console.Error.WriteLine(message + " " + Bot.Msg("Retrying in 60 seconds."));
 						Thread.Sleep(60000);
 					}
-					else if (message.Contains("Section=ResponseStatusLine")) {	// Squid problem
+					else if (message.Contains("Section=ResponseStatusLine")) {    // Squid problem
 						Bot.SwitchUnsafeHttpHeaderParsing(true);
 						GetPaths();
 						return;
@@ -325,7 +321,9 @@ namespace DotNetWikiBot
 			Regex wikiPathRE = new Regex("(?i)" + Regex.Escape(site) + "(/.+?/).+");
 			Regex indexPathRE1 = new Regex("(?i)" + Regex.Escape(site) +
 			                               "(/.+?/)index\\.php(\\?|/)");
-			Regex indexPathRE2 = new Regex("(?i)href=\"(/[^\"\\s<>?]*?)index\\.php(\\?|/)");
+			string uriPathChars = "-a-zA-Z0-9\\._~!$&'()*+,;=:@";    // according to RFC 3986
+			Regex indexPathRE2 = new Regex("(?i)href=\"(/[" + uriPathChars + "][" + uriPathChars +
+			                               "/]*/)?index\\.php(\\?|/)");
 			Regex indexPathRE3 = new Regex("(?i)" + Regex.Escape(site) + "(.+?)(index|api)\\.php");
 			Regex xhtmlNSUriRE = new Regex("(?i)<html[^>]*( xmlns=\"(?'xmlns'[^\"]+)\")[^>]*>");
 			Regex languageRE = new Regex("(?i)<html[^>]*( lang=\"(?'lang'[^\"]+)\")[^>]*>");
@@ -363,7 +361,7 @@ namespace DotNetWikiBot
 			File.WriteAllText(filePathName, wikiPath + "\r\n" + indexPath + "\r\n" + xhtmlNSUri +
 			                  "\r\n" + language + "\r\n" + langDirection + "\r\n" + site, Encoding.UTF8);
 		}
-		
+
 		/// <summary>Gets a specified MediaWiki message.</summary>
 		/// <param name="title">Title of the message.</param>
 		/// <returns>Returns raw text of the message.
@@ -398,7 +396,7 @@ namespace DotNetWikiBot
 			messages[messages.Count()-1].text = src;
 			return src;
 		}
-		
+
 		/// <summary>Gets all modified MediaWiki messages (to be more precise, all messages that are
 		/// contained in database), loads them into site.messages PageList (both titles and texts)
 		/// and dumps them to XML file.</summary>
@@ -418,7 +416,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(Bot.Msg("Updating MediaWiki messages dump. Please, wait..."));
 			PageList pl = new PageList(this);
 			bool prevBotQueryState = botQuery;
-			botQuery = false;	// backward compatibility requirement
+			botQuery = false;    // backward compatibility requirement
 			pl.FillFromAllPages("!", 8, false, 100000);
 			botQuery = prevBotQueryState;
 			File.Delete(filePathName);
@@ -426,7 +424,7 @@ namespace DotNetWikiBot
 			messages.FillAndLoadFromXMLDump(filePathName);
 			Console.WriteLine(Bot.Msg("MediaWiki messages dump updated successfully."));
 		}
-		
+
 		/// <summary>Gets all MediaWiki messages from "Special:Allmessages" page and loads them into
 		/// site.messages PageList. The function is not backward compatible.</summary>
 		public void GetMediaWikiMessages()
@@ -464,7 +462,7 @@ namespace DotNetWikiBot
 				messages.Add(p);
 			Console.WriteLine(Bot.Msg("MediaWiki messages dump updated successfully."));
 		}
-		
+
 		/// <summary>Retrieves metadata and local namespace names from site.</summary>
 		public void GetInfo()
 		{
@@ -492,7 +490,7 @@ namespace DotNetWikiBot
 						regCulture = CultureInfo.InvariantCulture;
 				}
 			}
-			
+
 			string src = GetPageHTM(site + indexPath + "index.php?title=Special:Export/" +
 			                        DateTime.Now.Ticks.ToString("x"));
 			XmlTextReader reader = new XmlTextReader(new StringReader(src));
@@ -532,77 +530,77 @@ namespace DotNetWikiBot
 			linkToPageRE3 = new Regex("<a href=\"[^\"]*?\" title=\"(" +
 			                          Regex.Escape(namespaces["6"].ToString()) + ":[^\"]+?)\">");
 			string redirectTag = "REDIRECT";
-			switch(language) {		// Revised 2010-07-02 (MediaWiki 1.15.4)
-			case "af": redirectTag += "|aanstuur"; break;
-			case "ar": redirectTag += "|تحويل"; break;
-			case "arz": redirectTag += "|تحويل|تحويل#"; break;
-			case "be": redirectTag += "|перанакіраваньне"; break;
-			case "be-x-old": redirectTag += "|перанакіраваньне"; break;
-			case "bg": redirectTag += "|пренасочване|виж"; break;
-			case "br": redirectTag += "|adkas"; break;
-			case "bs": redirectTag += "|preusmjeri"; break;
-			case "cs": redirectTag += "|přesměruj"; break;
-			case "cu": redirectTag += "|прѣнаправлєниѥ"; break;
-			case "cy": redirectTag += "|ail-cyfeirio|ailgyfeirio"; break;
-			case "de": redirectTag += "|weiterleitung"; break;
-			case "el": redirectTag += "|ανακατευθυνση"; break;
-			case "eo": redirectTag += "|alidirektu"; break;
-			case "es": redirectTag += "|redireccíon"; break;
-			case "et": redirectTag += "|suuna"; break;
-			case "eu": redirectTag += "|birzuzendu"; break;
-			case "fa": redirectTag += "|تغییرمسیر"; break;
-			case "fi": redirectTag += "|uudelleenohjaus|ohjaus"; break;
-			case "fr": redirectTag += "|redirection"; break;
-			case "ga": redirectTag += "|athsheoladh"; break;
-			case "gl": redirectTag += "|redirección"; break;
-			case "he": redirectTag += "|הפניה"; break;
-			case "hr": redirectTag += "|preusmjeri"; break;
-			case "hu": redirectTag += "|átirányítás"; break;
-			case "hy": redirectTag += "|վերահղում"; break;
-			case "id": redirectTag += "|alih"; break;
-			case "is": redirectTag += "|tilvísun"; break;
-			case "it": redirectTag += "|redirezione"; break;
-			case "ja": redirectTag += "|転送|リダイレクト|転送|リダイレクト"; break;
-			case "ka": redirectTag += "|გადამისამართება"; break;
-			case "kk": redirectTag += "|ايداۋ|айдау|aýdaw"; break;
-			case "km": redirectTag += "|បញ្ជូនបន្ត|ប្ដូរទីតាំងទៅ #ប្តូរទីតាំងទៅ"
+			switch(language) {    // Revised 2010-07-02 (MediaWiki 1.15.4)
+				case "af": redirectTag += "|aanstuur"; break;
+				case "ar": redirectTag += "|تحويل"; break;
+				case "arz": redirectTag += "|تحويل|تحويل#"; break;
+				case "be": redirectTag += "|перанакіраваньне"; break;
+				case "be-x-old": redirectTag += "|перанакіраваньне"; break;
+				case "bg": redirectTag += "|пренасочване|виж"; break;
+				case "br": redirectTag += "|adkas"; break;
+				case "bs": redirectTag += "|preusmjeri"; break;
+				case "cs": redirectTag += "|přesměruj"; break;
+				case "cu": redirectTag += "|прѣнаправлєниѥ"; break;
+				case "cy": redirectTag += "|ail-cyfeirio|ailgyfeirio"; break;
+				case "de": redirectTag += "|weiterleitung"; break;
+				case "el": redirectTag += "|ανακατευθυνση"; break;
+				case "eo": redirectTag += "|alidirektu"; break;
+				case "es": redirectTag += "|redireccíon"; break;
+				case "et": redirectTag += "|suuna"; break;
+				case "eu": redirectTag += "|birzuzendu"; break;
+				case "fa": redirectTag += "|تغییرمسیر"; break;
+				case "fi": redirectTag += "|uudelleenohjaus|ohjaus"; break;
+				case "fr": redirectTag += "|redirection"; break;
+				case "ga": redirectTag += "|athsheoladh"; break;
+				case "gl": redirectTag += "|redirección"; break;
+				case "he": redirectTag += "|הפניה"; break;
+				case "hr": redirectTag += "|preusmjeri"; break;
+				case "hu": redirectTag += "|átirányítás"; break;
+				case "hy": redirectTag += "|վերահղում"; break;
+				case "id": redirectTag += "|alih"; break;
+				case "is": redirectTag += "|tilvísun"; break;
+				case "it": redirectTag += "|redirezione"; break;
+				case "ja": redirectTag += "|転送|リダイレクト|転送|リダイレクト"; break;
+				case "ka": redirectTag += "|გადამისამართება"; break;
+				case "kk": redirectTag += "|ايداۋ|айдау|aýdaw"; break;
+				case "km": redirectTag += "|បញ្ជូនបន្ត|ប្ដូរទីតាំងទៅ #ប្តូរទីតាំងទៅ"
 				+ "|ប្ដូរទីតាំង|ប្តូរទីតាំង|ប្ដូរចំណងជើង"; break;
-			case "ko": redirectTag += "|넘겨주기"; break;
-			case "ksh": redirectTag += "|ömleidung"; break;
-			case "lt": redirectTag += "|peradresavimas"; break;
-			case "mk": redirectTag += "|пренасочување|види"; break;
-			case "ml": redirectTag += "|аґ¤аґїаґ°аґїаґљаµЌаґљаµЃаґµаґїаґџаµЃаґ•" +
+				case "ko": redirectTag += "|넘겨주기"; break;
+				case "ksh": redirectTag += "|ömleidung"; break;
+				case "lt": redirectTag += "|peradresavimas"; break;
+				case "mk": redirectTag += "|пренасочување|види"; break;
+				case "ml": redirectTag += "|аґ¤аґїаґ°аґїаґљаµЌаґљаµЃаґµаґїаґџаµЃаґ•" +
 				"|аґ¤аґїаґ°аґїаґљаµЌаґљаµЃаґµаґїаґџаґІаµЌвЂЌ"; break;
-			case "mr": redirectTag += "|а¤ЄаҐЃа¤Ёа¤°аҐЌа¤Ёа¤їа¤°аҐЌа¤¦аҐ‡а¤¶а¤Ё"; break;
-			case "mt": redirectTag += "|rindirizza"; break;
-			case "mwl": redirectTag += "|ancaminar"; break;
-			case "nds": redirectTag += "|wiederleiden"; break;
-			case "nds-nl": redirectTag += "|deurverwiezing|doorverwijzing"; break;
-			case "nl": redirectTag += "|doorverwijzing"; break;
-			case "nn": redirectTag += "|omdiriger"; break;
-			case "oc": redirectTag += "|redireccion"; break;
-			case "pl": redirectTag += "|patrz|przekieruj|tam"; break;
-			case "pt": redirectTag += "|redirecionamento"; break;
-			case "ro": redirectTag += "|redirecteaza"; break;
-			case "ru": redirectTag += "|перенаправление|перенапр"; break;
-			case "sa": redirectTag += "|а¤ЄаҐЃа¤Ёа¤°аҐЌа¤Ёа¤їа¤¦аҐ‡а¤¶а¤Ё"; break;
-			case "sd": redirectTag += "|چوريو"; break;
-			case "si": redirectTag += "|а¶єа·…а·’а¶єа·ња¶ёа·”а·Ђ"; break;
-			case "sk": redirectTag += "|presmeruj"; break;
-			case "sl": redirectTag += "|preusmeritev"; break;
-			case "sq": redirectTag += "|ridrejto"; break;
-			case "sr": redirectTag += "|преусмери|preusmeri"; break;
-			case "srn": redirectTag += "|doorverwijzing"; break;
-			case "sv": redirectTag += "|omdirigering"; break;
-			case "ta": redirectTag += "|а®µа®ґа®їа®®а®ѕа®±аЇЌа®±аЇЃ"; break;
-			case "te": redirectTag += "|а°¦а°ѕа°°а°їа°®а°ѕа°°а±Ќа°Єа±Ѓ"; break;
-			case "tr": redirectTag += "|yönlendİrme"; break;
-			case "tt": redirectTag += "перенаправление|перенапр|yünältü"; break;
-			case "uk": redirectTag += "|перенаправлення|перенаправление|перенапр"; break;
-			case "vi": redirectTag += "|đổi|đổi"; break;
-			case "vro": redirectTag += "|saadaq|suuna"; break;
-			case "yi": redirectTag += "|ווייטערפירן|#הפניה"; break;
-			default: redirectTag = "REDIRECT"; break;
+				case "mr": redirectTag += "|а¤ЄаҐЃа¤Ёа¤°аҐЌа¤Ёа¤їа¤°аҐЌа¤¦аҐ‡а¤¶а¤Ё"; break;
+				case "mt": redirectTag += "|rindirizza"; break;
+				case "mwl": redirectTag += "|ancaminar"; break;
+				case "nds": redirectTag += "|wiederleiden"; break;
+				case "nds-nl": redirectTag += "|deurverwiezing|doorverwijzing"; break;
+				case "nl": redirectTag += "|doorverwijzing"; break;
+				case "nn": redirectTag += "|omdiriger"; break;
+				case "oc": redirectTag += "|redireccion"; break;
+				case "pl": redirectTag += "|patrz|przekieruj|tam"; break;
+				case "pt": redirectTag += "|redirecionamento"; break;
+				case "ro": redirectTag += "|redirecteaza"; break;
+				case "ru": redirectTag += "|перенаправление|перенапр"; break;
+				case "sa": redirectTag += "|а¤ЄаҐЃа¤Ёа¤°аҐЌа¤Ёа¤їа¤¦аҐ‡а¤¶а¤Ё"; break;
+				case "sd": redirectTag += "|چوريو"; break;
+				case "si": redirectTag += "|а¶єа·…а·’а¶єа·ња¶ёа·”а·Ђ"; break;
+				case "sk": redirectTag += "|presmeruj"; break;
+				case "sl": redirectTag += "|preusmeritev"; break;
+				case "sq": redirectTag += "|ridrejto"; break;
+				case "sr": redirectTag += "|преусмери|preusmeri"; break;
+				case "srn": redirectTag += "|doorverwijzing"; break;
+				case "sv": redirectTag += "|omdirigering"; break;
+				case "ta": redirectTag += "|а®µа®ґа®їа®®а®ѕа®±аЇЌа®±аЇЃ"; break;
+				case "te": redirectTag += "|а°¦а°ѕа°°а°їа°®а°ѕа°°а±Ќа°Єа±Ѓ"; break;
+				case "tr": redirectTag += "|yönlendİrme"; break;
+				case "tt": redirectTag += "перенаправление|перенапр|yünältü"; break;
+				case "uk": redirectTag += "|перенаправлення|перенаправление|перенапр"; break;
+				case "vi": redirectTag += "|đổi|đổi"; break;
+				case "vro": redirectTag += "|saadaq|suuna"; break;
+				case "yi": redirectTag += "|ווייטערפירן|#הפניה"; break;
+				default: redirectTag = "REDIRECT"; break;
 			}
 			redirectRE = new Regex(@"(?i)^#(?:" + redirectTag + @")\s*:?\s*\[\[(.+?)(\|.+)?]]",
 			                       RegexOptions.Compiled);
@@ -642,26 +640,26 @@ namespace DotNetWikiBot
 				}
 			}
 		}
-		
+
 		/// <summary>Loads default English namespace names for site.</summary>
 		public void LoadDefaults()
 		{
 			if (wikiNSpaces.Count != 0 && WMSites.Count != 0)
 				return;
-			
+
 			string[] wikiNSNames = { "Media", "Special", "", "Talk", "User", "User talk", name,
 				name + " talk", "Image", "Image talk", "MediaWiki", "MediaWiki talk", "Template",
 				"Template talk", "Help", "Help talk", "Category", "Category talk" };
 			for (int i=-2, j=0; i < 16; i++, j++)
 				wikiNSpaces.Add(i.ToString(), wikiNSNames[j]);
 			wikiNSpaces.Remove("0");
-			
+
 			WMSites.Add("w", "wikipedia");					WMSites.Add("wikt", "wiktionary");
 			WMSites.Add("b", "wikibooks");					WMSites.Add("n", "wikinews");
 			WMSites.Add("q", "wikiquote");					WMSites.Add("s", "wikisource");
 			foreach (DictionaryEntry s in WMSites)
 				WMSitesStr += s.Key + "|" + s.Value + "|";
-			
+
 			// Revised 2010-07-02
 			mediaWikiVars = new string[] { "currentmonth","currentmonthname","currentmonthnamegen",
 				"currentmonthabbrev","currentday2","currentdayname","currentyear","currenttime",
@@ -789,7 +787,7 @@ namespace DotNetWikiBot
 			botQueryProps.Add("templates", "tl");			botQueryProps.Add("categories", "cl");
 			botQueryProps.Add("extlinks", "el");			botQueryLists.Add("search", "sr");
 		}
-		
+
 		/// <summary>Logs in and retrieves cookies.</summary>
 		public void LogIn()
 		{
@@ -800,7 +798,7 @@ namespace DotNetWikiBot
 				"<input type=\"hidden\" name=\"wpLoginToken\" value=\"");
 			if( loginTokenPos != -1)
 				loginToken = loginPageSrc.Substring(loginTokenPos + 48, 32);
-			
+
 			string postData = string.Format("wpName={0}&wpPassword={1}&wpDomain={2}" +
 			                                "&wpLoginToken={3}&wpRemember=1&wpLoginattempt=Log+in",
 			                                HttpUtility.UrlEncode(userName), HttpUtility.UrlEncode(userPass),
@@ -813,7 +811,7 @@ namespace DotNetWikiBot
 					"\n\n" + Bot.Msg("Login failed. Check your username and password.") + "\n");
 			Console.WriteLine(Bot.Msg("Logged in as {0}."), userName);
 		}
-		
+
 		/// <summary>Logs in via api.php and retrieves cookies.</summary>
 		public void LogInViaApi()
 		{
@@ -826,7 +824,7 @@ namespace DotNetWikiBot
 				Console.WriteLine(Bot.Msg("Logged in as {0}."), userName);
 				return;
 			}
-			
+
 			int tokenPos = respStr.IndexOf("token=\"");
 			if (tokenPos < 1)
 				throw new WikiBotException(
@@ -840,7 +838,7 @@ namespace DotNetWikiBot
 					"\n\n" + Bot.Msg("Login failed. Check your username and password.") + "\n");
 			Console.WriteLine(Bot.Msg("Logged in as {0}."), userName);
 		}
-		
+
 		/// <summary>Logs in SourceForge.net and retrieves cookies for work with
 		/// SourceForge-hosted wikis. That's a special version of LogIn() function.</summary>
 		public void LogInSourceForge()
@@ -855,7 +853,7 @@ namespace DotNetWikiBot
 					"\n\n" + Bot.Msg("Login failed. Check your username and password.") + "\n");
 			Console.WriteLine(Bot.Msg("Logged in SourceForge as {0}."), userName);
 		}
-		
+
 		/// <summary>Gets the list of Wikimedia Foundation wiki sites and ISO 639-1
 		/// language codes, used as prefixes.</summary>
 		public void GetWikimediaWikisList()
@@ -876,7 +874,7 @@ namespace DotNetWikiBot
 			Site.iwikiDispLinkRE = new Regex(@"(?i)\[\[:((" + WMLangsStr + "):(.+?))]]");
 			Site.sisterWikiLinkRE = new Regex(@"(?i)\[\[((" + WMSitesStr + "):(.+?))]]");
 		}
-		
+
 		/// <summary>This internal function gets the hypertext markup (HTM) of wiki-page.</summary>
 		/// <param name="pageURL">Absolute or relative URL of page to get.</param>
 		/// <returns>Returns HTM source code.</returns>
@@ -884,7 +882,7 @@ namespace DotNetWikiBot
 		{
 			return PostDataAndGetResultHTM(pageURL, "", false, true);
 		}
-		
+
 		/// <summary>This internal function posts specified string to requested resource
 		/// and gets the result hypertext markup (HTM).</summary>
 		/// <param name="pageURL">Absolute or relative URL of page to get.</param>
@@ -894,7 +892,7 @@ namespace DotNetWikiBot
 		{
 			return PostDataAndGetResultHTM(pageURL, postData, false, true);
 		}
-		
+
 		/// <summary>This internal function posts specified string to requested resource
 		/// and gets the result hypertext markup (HTM).</summary>
 		/// <param name="pageURL">Absolute or relative URL of page to get.</param>
@@ -926,7 +924,7 @@ namespace DotNetWikiBot
 			}
 			webReq.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip,deflate");
 			if (!string.IsNullOrEmpty(postData)) {
-				if (Bot.isRunningOnMono)	// Mono bug 636219 evasion
+				if (Bot.isRunningOnMono)    // Mono bug 636219 evasion
 					webReq.AllowAutoRedirect = false;
 				// https://bugzilla.novell.com/show_bug.cgi?id=636219
 				webReq.Method = "POST";
@@ -946,15 +944,15 @@ namespace DotNetWikiBot
 				catch (WebException e) {
 					string message = e.Message;
 					if (webReq.AllowAutoRedirect == false &&
-					    webResp.StatusCode == HttpStatusCode.Redirect)	// Mono bug 636219 evasion
+					    webResp.StatusCode == HttpStatusCode.Redirect)    // Mono bug 636219 evasion
 						return "";
-					if (Regex.IsMatch(message, ": \\(50[02349]\\) ")) {		// Remote problem
+					if (Regex.IsMatch(message, ": \\(50[02349]\\) ")) {    // Remote problem
 						if (errorCounter > Bot.retryTimes)
 							throw;
 						Console.Error.WriteLine(message + " " + Bot.Msg("Retrying in 60 seconds."));
 						Thread.Sleep(60000);
 					}
-					else if (message.Contains("Section=ResponseStatusLine")) {	// Squid problem
+					else if (message.Contains("Section=ResponseStatusLine")) {    // Squid problem
 						Bot.SwitchUnsafeHttpHeaderParsing(true);
 						//Console.Write("|");
 						return PostDataAndGetResultHTM(pageURL, postData, getCookies,
@@ -984,7 +982,7 @@ namespace DotNetWikiBot
 			webResp.Close();
 			return respStr;
 		}
-		
+
 		/// <summary>This internal function deletes everything before startTag and everything after
 		/// endTag. Optionally it can insert back the DOCTYPE definition and root element of
 		/// XML/XHTML documents.</summary>
@@ -1002,7 +1000,7 @@ namespace DotNetWikiBot
 				startTag = "<!-- bodytext -->";
 			if (startTag == "<!-- bodytext -->" && ver < new Version(1,16))
 				startTag = "<!-- start content -->";
-			
+
 			if (startTag == "<!-- bodytext -->" && string.IsNullOrEmpty(endTag))
 				endTag = "<!-- /bodytext -->";
 			else if (startTag == "<!-- content -->" && string.IsNullOrEmpty(endTag))
@@ -1011,10 +1009,10 @@ namespace DotNetWikiBot
 				endTag = "<!-- /bodyContent -->";
 			else if (startTag == "<!-- start content -->" && string.IsNullOrEmpty(endTag))
 				endTag = "<!-- end content -->";
-			
+
 			if (text[0] != '<')
 				text = text.Trim();
-			
+
 			string headText = "";
 			string rootEnd = "";
 			if (leaveHead == true) {
@@ -1029,7 +1027,7 @@ namespace DotNetWikiBot
 				else
 					rootEnd = text.Substring(rootEndPos);
 			}
-			
+
 			int startPos = text.IndexOf(startTag) + (removeTags == true ? startTag.Length : 0);
 			int endPos = text.IndexOf(endTag) + (removeTags == false ? endTag.Length : 0);
 			if (startPos == -1 || endPos == -1 || endPos < startPos)
@@ -1037,7 +1035,7 @@ namespace DotNetWikiBot
 			else
 				return headText + text.Substring(startPos, endPos - startPos) + rootEnd;
 		}
-		
+
 		/// <summary>This internal function constructs XPathDocument, makes XPath query and
 		/// returns XPathNodeIterator for selected nodes.</summary>
 		/// <param name="xmlSource">Source XML data.</param>
@@ -1050,7 +1048,7 @@ namespace DotNetWikiBot
 			XPathNavigator nav = doc.CreateNavigator();
 			return nav.Select(xpathQuery, xmlNS);
 		}
-		
+
 		/// <summary>This internal function constructs and returns XmlReader object.</summary>
 		/// <param name="xmlSource">Source XML data.</param>
 		/// <returns>XmlReader object.</returns>
@@ -1063,11 +1061,11 @@ namespace DotNetWikiBot
 			settings.IgnoreComments = true;
 			settings.IgnoreProcessingInstructions = true;
 			settings.IgnoreWhitespace = true;
-			settings.DtdProcessing =  DtdProcessing.Parse;	// for .NET 4.0 and higher change this line to
+			settings.ProhibitDtd = false;    // for .NET 4.0 and higher change this line to
 			// settings.DtdProcessing = DtdProcessing.Parse;
 			return XmlReader.Create(strReader, settings);
 		}
-		
+
 		/// <summary>This internal function removes the namespace prefix from page title.</summary>
 		/// <param name="pageTitle">Page title to remove prefix from.</param>
 		/// <param name="nsIndex">Index of namespace to remove. If this parameter is 0,
@@ -1100,7 +1098,7 @@ namespace DotNetWikiBot
 			}
 			return pageTitle;
 		}
-		
+
 		/// <summary>Function changes default English namespace prefixes to correct local prefixes
 		/// (e.g. for German wiki-sites it changes "Category:..." to "Kategorie:...").</summary>
 		/// <param name="pageTitle">Page title to correct prefix in.</param>
@@ -1117,7 +1115,7 @@ namespace DotNetWikiBot
 			}
 			return pageTitle;
 		}
-		
+
 		/// <summary>Parses the provided template body and returns the key/value pairs of it's
 		/// parameters titles and values. Everything inside the double braces must be passed to
 		/// this function, so first goes the template's title, then '|' character, and then go the
@@ -1142,24 +1140,24 @@ namespace DotNetWikiBot
 				throw new ArgumentNullException("template");
 			if (template.StartsWith("{{"))
 				template = template.Substring(2, template.Length - 4);
-			
+
 			int startPos, endPos, len = 0;
 			string str = template;
-			
+
 			while ((startPos = str.LastIndexOf("{{")) != -1) {
 				endPos = str.IndexOf("}}", startPos);
 				len = (endPos != -1) ? endPos - startPos + 2 : 2;
 				str = str.Remove(startPos, len);
 				str = str.Insert(startPos, new String('_', len));
 			}
-			
+
 			while ((startPos = str.LastIndexOf("[[")) != -1) {
 				endPos = str.IndexOf("]]", startPos);
 				len = (endPos != -1) ? endPos - startPos + 2 : 2;
 				str = str.Remove(startPos, len);
 				str = str.Insert(startPos, new String('_', len));
 			}
-			
+
 			List<int> separators = Bot.GetMatchesPositions(str, "|", false);
 			if (separators == null || separators.Count == 0)
 				return new Dictionary<string, string>();
@@ -1170,7 +1168,7 @@ namespace DotNetWikiBot
 				endPos = separators[i];
 			}
 			parameters.Reverse();
-			
+
 			Dictionary<string, string> templateParams = new Dictionary<string, string>();
 			for (int pos, i = 0; i < parameters.Count; i++) {
 				pos = parameters[i].IndexOf('=');
@@ -1182,7 +1180,7 @@ namespace DotNetWikiBot
 			}
 			return templateParams;
 		}
-		
+
 		/// <summary>Formats a template with the specified title and parameters. Default formatting
 		/// options are used.</summary>
 		/// <param name="templateTitle">Template's title.</param>
@@ -1194,7 +1192,7 @@ namespace DotNetWikiBot
 		{
 			return FormatTemplate(templateTitle, templateParams, false, false, 0);
 		}
-		
+
 		/// <summary>Formats a template with the specified title and parameters. Formatting
 		/// options are got from provided reference template. That function is usually used to
 		/// format modified template as it was in it's initial state, though absolute format
@@ -1210,21 +1208,21 @@ namespace DotNetWikiBot
 		{
 			if (string.IsNullOrEmpty(referenceTemplate))
 				throw new ArgumentNullException("referenceTemplate");
-			
+
 			bool inline = false;
 			bool withoutSpaces = false;
 			int padding = 0;
-			
+
 			if (!referenceTemplate.Contains("\n"))
 				inline = true;
 			if (!referenceTemplate.Contains(" ") && !referenceTemplate.Contains("\t"))
 				withoutSpaces = true;
 			if (withoutSpaces == false && referenceTemplate.Contains("  ="))
 				padding = -1;
-			
+
 			return FormatTemplate(templateTitle, templateParams, inline, withoutSpaces, padding);
 		}
-		
+
 		/// <summary>Formats a template with the specified title and parameters, allows extended
 		/// format options to be specified.</summary>
 		/// <param name="templateTitle">Template's title.</param>
@@ -1247,14 +1245,14 @@ namespace DotNetWikiBot
 				throw new ArgumentNullException("templateTitle");
 			if (templateParams == null || templateParams.Count == 0)
 				throw new ArgumentNullException("templateParams");
-			
+
 			if (inline != false || withoutSpaces != false)
 				padding = 0;
 			if (padding == -1)
 				foreach (KeyValuePair<string, string> kvp in templateParams)
 					if (kvp.Key.Length > padding)
 						padding = kvp.Key.Length;
-			
+
 			int i = 1;
 			string template = "{{" + templateTitle;
 			foreach (KeyValuePair<string, string> kvp in templateParams) {
@@ -1274,14 +1272,14 @@ namespace DotNetWikiBot
 				i++;
 			}
 			template += "\n}}";
-			
+
 			if (inline == true)
 				template = template.Replace("\n", " ");
 			if (withoutSpaces == true)
 				template = template.Replace(" ", "");
 			return template;
 		}
-		
+
 		/// <summary>Shows names and integer keys of local and default namespaces.</summary>
 		public void ShowNamespaces()
 		{
@@ -1291,7 +1289,7 @@ namespace DotNetWikiBot
 			}
 		}
 	}
-	
+
 	/// <summary>Class defines wiki page object.</summary>
 	[ClassInterface(ClassInterfaceType.AutoDispatch)]
 	[Serializable]
@@ -1327,7 +1325,7 @@ namespace DotNetWikiBot
 		public string editSessionToken;
 		/// <summary>Site, on which the page is.</summary>
 		public Site site;
-		
+
 		/// <summary>This constructor creates Page object with specified title and specified
 		/// Site object. This is preferable constructor. When constructed, new Page object doesn't
 		/// contain text. Use Load() method to get text from live wiki. Or use LoadEx() to get
@@ -1340,7 +1338,7 @@ namespace DotNetWikiBot
 			this.title = title;
 			this.site = site;
 		}
-		
+
 		/// <summary>This constructor creates empty Page object with specified Site object,
 		/// but without title. Avoid using this constructor needlessly.</summary>
 		/// <param name="site">Site object, it must be constructed beforehand.</param>
@@ -1349,7 +1347,7 @@ namespace DotNetWikiBot
 		{
 			this.site = site;
 		}
-		
+
 		/// <summary>This constructor creates Page object with specified title. Site object
 		/// with default properties is created internally and logged in. Constructing
 		/// new Site object is too slow, don't use this constructor needlessly.</summary>
@@ -1360,7 +1358,7 @@ namespace DotNetWikiBot
 			this.site = new Site();
 			this.title = title;
 		}
-		
+
 		/// <summary>This constructor creates Page object with specified page's numeric revision ID
 		/// (also called "oldid"). Page title is retrieved automatically
 		/// in this constructor.</summary>
@@ -1376,7 +1374,7 @@ namespace DotNetWikiBot
 			lastRevisionID = revisionID.ToString();
 			GetTitle();
 		}
-		
+
 		/// <summary>This constructor creates Page object with specified page's numeric revision ID
 		/// (also called "oldid"). Page title is retrieved automatically in this constructor.
 		/// Site object with default properties is created internally and logged in. Constructing
@@ -1392,7 +1390,7 @@ namespace DotNetWikiBot
 			lastRevisionID = revisionID.ToString();
 			GetTitle();
 		}
-		
+
 		/// <summary>This constructor creates empty Page object without title. Site object with
 		/// default properties is created internally and logged in. Constructing new Site object
 		/// is too slow, avoid using this constructor needlessly.</summary>
@@ -1401,7 +1399,7 @@ namespace DotNetWikiBot
 		{
 			this.site = new Site();
 		}
-		
+
 		/// <summary>Loads actual page text for live wiki site via raw web interface.
 		/// If Page.lastRevisionID is specified, the function gets that specified
 		/// revision.</summary>
@@ -1418,7 +1416,7 @@ namespace DotNetWikiBot
 			}
 			catch (WebException e) {
 				string message = e.Message;
-				if (message.Contains(": (404) ")) {		// Not Found
+				if (message.Contains(": (404) ")) {    // Not Found
 					Console.Error.WriteLine(Bot.Msg("Page \"{0}\" doesn't exist."), title);
 					text = "";
 					return;
@@ -1428,7 +1426,7 @@ namespace DotNetWikiBot
 			}
 			Console.WriteLine(Bot.Msg("Page \"{0}\" loaded successfully."), title);
 		}
-		
+
 		/// <summary>Loads page text and metadata via XML export interface. It is slower,
 		/// than Load(), don't use it if you don't need page metadata (page id, timestamp,
 		/// comment, last contributor, minor edit mark).</summary>
@@ -1441,7 +1439,7 @@ namespace DotNetWikiBot
 			string src = site.GetPageHTM(res);
 			ParsePageXML(src);
 		}
-		
+
 		/// <summary>This internal function parses MediaWiki XML export data using XmlDocument
 		/// to get page text and metadata.</summary>
 		/// <param name="xmlSrc">XML export source code.</param>
@@ -1474,7 +1472,7 @@ namespace DotNetWikiBot
 			else
 				Console.WriteLine(Bot.Msg("Page \"{0}\" loaded successfully."), title);
 		}
-		
+
 		/// <summary>Loads page text from the specified UTF8-encoded file.</summary>
 		/// <param name="filePathName">Path and name of the file.</param>
 		public void LoadFromFile(string filePathName)
@@ -1486,7 +1484,7 @@ namespace DotNetWikiBot
 				Bot.Msg("Text for page \"{0}\" successfully loaded from \"{1}\" file."),
 				title, filePathName);
 		}
-		
+
 		/// <summary>This function is used internally to gain rights to edit page
 		/// on a live wiki site.</summary>
 		public void GetEditSessionData()
@@ -1496,14 +1494,13 @@ namespace DotNetWikiBot
 					Bot.Msg("No title specified for page to get edit session data."));
 			string src = site.GetPageHTM(site.indexPath + "index.php?title=" +
 			                             HttpUtility.UrlEncode(title) + "&action=edit");
-            Site.last = src;
 			editSessionTime = Site.editSessionTimeRE1.Match(src).Groups[1].ToString();
 			editSessionToken = Site.editSessionTokenRE1.Match(src).Groups[1].ToString();
 			if (string.IsNullOrEmpty(editSessionToken))
 				editSessionToken = Site.editSessionTokenRE2.Match(src).Groups[1].ToString();
 			watched = Regex.IsMatch(src, "<a href=\"[^\"]+&(amp;)?action=unwatch\"");
 		}
-		
+
 		/// <summary>This function is used internally to gain rights to edit page on a live wiki
 		/// site. The function queries rights, using bot interface, thus saving traffic.</summary>
 		public void GetEditSessionDataEx()
@@ -1513,7 +1510,6 @@ namespace DotNetWikiBot
 					Bot.Msg("No title specified for page to get edit session data."));
 			string src = site.GetPageHTM(site.indexPath + "api.php?action=query&prop=info" +
 			                             "&format=xml&intoken=edit&titles=" + HttpUtility.UrlEncode(title));
-            Site.last = src;
 			editSessionToken = Site.editSessionTokenRE3.Match(src).Groups[1].ToString();
 			if (editSessionToken == "+\\")
 				editSessionToken = "";
@@ -1528,7 +1524,7 @@ namespace DotNetWikiBot
 			}
 			watched = site.watchList.Contains(title);
 		}
-		
+
 		/// <summary>Retrieves the title for this Page object using page's numeric revision ID
 		/// (also called "oldid"), stored in "lastRevisionID" object's property. Make sure that
 		/// "lastRevisionID" property is set before calling this function. Use this function
@@ -1544,14 +1540,14 @@ namespace DotNetWikiBot
 			title = Regex.Match(src, "<h1 (?:id=\"firstHeading\" )?class=\"firstHeading\">" +
 			                    "(.+?)</h1>").Groups[1].ToString();
 		}
-		
+
 		/// <summary>Saves current contents of page.text on live wiki site. Uses default bot
 		/// edit comment and default minor edit mark setting ("true" in most cases)/</summary>
 		public void Save()
 		{
 			Save(text, Bot.editComment, Bot.isMinorEdit);
 		}
-		
+
 		/// <summary>Saves specified text in page on live wiki. Uses default bot
 		/// edit comment and default minor edit mark setting ("true" in most cases).</summary>
 		/// <param name="newText">New text for this page.</param>
@@ -1559,7 +1555,7 @@ namespace DotNetWikiBot
 		{
 			Save(newText, Bot.editComment, Bot.isMinorEdit);
 		}
-		
+
 		/// <summary>Saves current page.text contents on live wiki site.</summary>
 		/// <param name="comment">Your edit comment.</param>
 		/// <param name="isMinorEdit">Minor edit mark (true = minor edit).</param>
@@ -1567,7 +1563,7 @@ namespace DotNetWikiBot
 		{
 			Save(text, comment, isMinorEdit);
 		}
-		
+
 		/// <summary>Saves specified text in page on live wiki.</summary>
 		/// <param name="newText">New text for this page.</param>
 		/// <param name="comment">Your edit comment.</param>
@@ -1584,30 +1580,14 @@ namespace DotNetWikiBot
 					"Bot action on \"{0}\" page is prohibited " +
 					"by \"nobots\" or \"bots|allow=none\" template."), title));
 
-            if (Bot.useBotQuery == true && site.botQuery == true &&
-                (site.ver.Major > 1 || (site.ver.Major == 1 && site.ver.Minor >= 15)))
-            {
-                GetEditSessionDataEx();
-            }
-            else
-            {
-                GetEditSessionData();
-            }
-
-            if (string.IsNullOrEmpty(editSessionTime))
-            {
-                throw new WikiBotException(
-                    string.Format(Bot.Msg("Session time NULL \"{0}\"."), title));
-            }
-
-            if (string.IsNullOrEmpty(editSessionToken))
-            {
-                File.WriteAllText("data", Site.last);
-                Console.WriteLine("Dumped");
-                throw new WikiBotException(
-                    string.Format(Bot.Msg("Session token NULL \"{0}\"."), title));
-            }
-
+			if (Bot.useBotQuery == true && site.botQuery == true &&
+			    (site.ver.Major > 1 || (site.ver.Major == 1 && site.ver.Minor >= 15)))
+				GetEditSessionDataEx();
+			else
+				GetEditSessionData();
+			if (string.IsNullOrEmpty(editSessionTime) || string.IsNullOrEmpty(editSessionToken))
+				throw new WikiBotException(
+					string.Format(Bot.Msg("Insufficient rights to edit page \"{0}\"."), title));
 			string postData = string.Format("wpSection=&wpStarttime={0}&wpEdittime={1}" +
 			                                "&wpScrolltop=&wpTextbox1={2}&wpSummary={3}&wpSave=Save%20Page" +
 			                                "&wpEditToken={4}{5}{6}",
@@ -1642,7 +1622,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(Bot.Msg("Page \"{0}\" saved successfully."), title);
 			text = newText;
 		}
-		
+
 		/// <summary>Undoes the last edit, so page text reverts to previous contents.
 		/// The function doesn't affect other actions like renaming.</summary>
 		/// <param name="comment">Revert comment.</param>
@@ -1665,7 +1645,7 @@ namespace DotNetWikiBot
 			Save(pl[1].text, comment, isMinorEdit);
 			Console.WriteLine(Bot.Msg("Page \"{0}\" was reverted."), title);
 		}
-		
+
 		/// <summary>Undoes all last edits of last page contributor, so page text reverts to
 		/// previous contents. The function doesn't affect other operations
 		/// like renaming or protecting.</summary>
@@ -1686,7 +1666,7 @@ namespace DotNetWikiBot
 					pl.FillFromPageHistory(title, i);
 				lastEditor = pl[0].lastUser;
 				foreach (Page p in pl)
-				if (p.lastUser != lastEditor) {
+					if (p.lastUser != lastEditor) {
 					p.Load();
 					Save(p.text, comment, isMinorEdit);
 					Console.WriteLine(
@@ -1702,7 +1682,7 @@ namespace DotNetWikiBot
 			                        title, lastEditor);
 			return false;
 		}
-		
+
 		/// <summary>Protects or unprotects the page, so only authorized group of users can edit or
 		/// rename it. Changing page protection mode requires administrator (sysop)
 		/// rights.</summary>
@@ -1764,7 +1744,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(
 				Bot.Msg("Protection mode for page \"{0}\" changed successfully."), title);
 		}
-		
+
 		/// <summary>Adds page to bot account's watchlist.</summary>
 		public void Watch()
 		{
@@ -1781,7 +1761,7 @@ namespace DotNetWikiBot
 			watched = true;
 			Console.WriteLine(Bot.Msg("Page \"{0}\" added to watchlist."), title);
 		}
-		
+
 		/// <summary>Removes page from bot account's watchlist.</summary>
 		public void Unwatch()
 		{
@@ -1798,7 +1778,7 @@ namespace DotNetWikiBot
 			watched = false;
 			Console.WriteLine(Bot.Msg("Page \"{0}\" was removed from watchlist."), title);
 		}
-		
+
 		/// <summary>This function opens page text in Microsoft Word for editing.
 		/// Just close Word after editing, and the revised text will appear in
 		/// Page.text variable.</summary>
@@ -1846,7 +1826,7 @@ namespace DotNetWikiBot
 			                                   "documentation in \"Documentation.chm\" file for additional instructions.\n"));
 			#endif
 		}
-		
+
 		/// <summary>Uploads local image to wiki site. Function also works with non-image files.
 		/// Note: uploaded image title (wiki page title) will be the same as title of this Page
 		/// object, not the title of source file.</summary>
@@ -1924,13 +1904,13 @@ namespace DotNetWikiBot
 				}
 				catch (WebException e) {
 					string message = e.Message;
-					if (Regex.IsMatch(message, ": \\(50[02349]\\) ")) {		// Remote problem
+					if (Regex.IsMatch(message, ": \\(50[02349]\\) ")) {    // Remote problem
 						if (errorCounter > Bot.retryTimes)
 							throw;
 						Console.Error.WriteLine(message + " " + Bot.Msg("Retrying in 60 seconds."));
 						Thread.Sleep(60000);
 					}
-					else if (message.Contains("Section=ResponseStatusLine")) {	// Squid problem
+					else if (message.Contains("Section=ResponseStatusLine")) {    // Squid problem
 						Bot.SwitchUnsafeHttpHeaderParsing(true);
 						UploadImage(filePathName, description, license, copyStatus, source);
 						return;
@@ -1953,14 +1933,14 @@ namespace DotNetWikiBot
 						Bot.Msg("Error occurred when uploading image \"{0}\"."), title));
 			}
 			catch (WikiBotException e) {
-				if (!e.Message.Contains("Uploadcorrupt"))	// skip, if MediaWiki message not found
+				if (!e.Message.Contains("Uploadcorrupt"))    // skip, if MediaWiki message not found
 					throw;
 			}
 			title = site.namespaces["6"] + ":" + targetName;
 			text = description;
 			Console.WriteLine(Bot.Msg("Image \"{0}\" uploaded successfully."), title);
 		}
-		
+
 		/// <summary>Uploads web image to wiki site.</summary>
 		/// <param name="imageFileUrl">Full URL of image file on the web.</param>
 		/// <param name="description">Image description.</param>
@@ -1990,7 +1970,7 @@ namespace DotNetWikiBot
 			            description, license, copyStatus, imageFileUrl);
 			File.Delete("Cache" + Path.DirectorySeparatorChar + imageFileName);
 		}
-		
+
 		/// <summary>Downloads image, audio or video file, pointed by this page title,
 		/// from the wiki site. Redirection is resolved automatically.</summary>
 		/// <param name="filePathName">Path and name of local file to save image to.</param>
@@ -2004,7 +1984,7 @@ namespace DotNetWikiBot
 			}
 			catch (WebException e) {
 				string message = e.Message;
-				if (message.Contains(": (404) ")) {		// Not Found
+				if (message.Contains(": (404) ")) {    // Not Found
 					Console.Error.WriteLine(Bot.Msg("Page \"{0}\" doesn't exist."), title);
 					text = "";
 					return;
@@ -2030,7 +2010,7 @@ namespace DotNetWikiBot
 			Bot.wc.DownloadFile(fileLink, filePathName);
 			Console.WriteLine(Bot.Msg("Image \"{0}\" downloaded successfully."), title);
 		}
-		
+
 		/// <summary>Saves page text to the specified file. If the target file already exists,
 		/// it is overwritten.</summary>
 		/// <param name="filePathName">Path and name of the file.</param>
@@ -2044,7 +2024,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(Bot.Msg("Text of \"{0}\" page successfully saved in \"{1}\" file."),
 			                  title, filePathName);
 		}
-		
+
 		/// <summary>Saves page text to the ".txt" file in current directory.
 		/// Use Directory.SetCurrentDirectory function to change the current directory (but don't
 		/// forget to change it back after saving file). The name of the file is constructed
@@ -2066,7 +2046,7 @@ namespace DotNetWikiBot
 			fileTitle = fileTitle.Replace("|", "&#x7c;");
 			SaveToFile(fileTitle + ".txt");
 		}
-		
+
 		/// <summary>Returns true, if page.text field is empty. Don't forget to call
 		/// page.Load() before using this function.</summary>
 		/// <returns>Returns bool value.</returns>
@@ -2074,7 +2054,7 @@ namespace DotNetWikiBot
 		{
 			return string.IsNullOrEmpty(text);
 		}
-		
+
 		/// <summary>Returns true, if page.text field is not empty. Don't forget to call
 		/// Load() or LoadEx() before using this function.</summary>
 		/// <returns>Returns bool value.</returns>
@@ -2082,7 +2062,7 @@ namespace DotNetWikiBot
 		{
 			return (string.IsNullOrEmpty(text) == true) ? false : true;
 		}
-		
+
 		/// <summary>Returns true, if page redirects to another page. Don't forget to load
 		/// actual page contents from live wiki "Page.Load()" before using this function.</summary>
 		/// <returns>Returns bool value.</returns>
@@ -2092,7 +2072,7 @@ namespace DotNetWikiBot
 				return false;
 			return site.redirectRE.IsMatch(text);
 		}
-		
+
 		/// <summary>Returns redirection target. Don't forget to load
 		/// actual page contents from live wiki "Page.Load()" before using this function.</summary>
 		/// <returns>Returns redirection target page title as string. Or empty string, if this
@@ -2104,7 +2084,7 @@ namespace DotNetWikiBot
 			else
 				return string.Empty;
 		}
-		
+
 		/// <summary>If this page is a redirection, this function loads the title and text
 		/// of redirected-to page into this Page object.</summary>
 		public void ResolveRedirect()
@@ -2115,7 +2095,7 @@ namespace DotNetWikiBot
 				Load();
 			}
 		}
-		
+
 		/// <summary>Returns true, if this page is a disambiguation page. Don't forget to load
 		/// actual page contents from live wiki  before using this function. Local redirect
 		/// templates of Wikimedia sites are also recognized, but if this extended functionality
@@ -2137,7 +2117,7 @@ namespace DotNetWikiBot
 			text = Bot.GetWebResource(res, "");
 			string[] iw = GetInterWikiLinks();
 			foreach (string s in iw)
-			if (s.StartsWith(site.language + ":")) {
+				if (s.StartsWith(site.language + ":")) {
 				site.disambigStr += "|" + s.Substring(s.LastIndexOf(":") + 1,
 				                                      s.Length - s.LastIndexOf(":") - 1);
 				break;
@@ -2145,20 +2125,20 @@ namespace DotNetWikiBot
 			text = buffer;
 			return Regex.IsMatch(text, @"(?i)\{\{(" + site.disambigStr + ")}}");
 		}
-		
+
 		/// <summary>This internal function removes the namespace prefix from page title.</summary>
 		public void RemoveNSPrefix()
 		{
 			title = site.RemoveNSPrefix(title, 0);
 		}
-		
+
 		/// <summary>Function changes default English namespace prefixes to correct local prefixes
 		/// (e.g. for German wiki sites it changes "Category:..." to "Kategorie:...").</summary>
 		public void CorrectNSPrefix()
 		{
 			title = site.CorrectNSPrefix(title);
 		}
-		
+
 		/// <summary>Returns the array of strings, containing all wikilinks ([[...]])
 		/// found in page text, excluding links in image descriptions, but including
 		/// interwiki links, links to sister projects, categories, images, etc.</summary>
@@ -2171,7 +2151,7 @@ namespace DotNetWikiBot
 				matchStrings[i] = matches[i].Groups[1].Value;
 			return matchStrings;
 		}
-		
+
 		/// <summary>Finds all internal wikilinks in page text, excluding interwiki
 		/// links, links to sister projects, categories, embedded images and links in
 		/// image descriptions.</summary>
@@ -2203,7 +2183,7 @@ namespace DotNetWikiBot
 			}
 			return pl;
 		}
-		
+
 		/// <summary>Returns the array of strings, containing external links,
 		/// found in page text.</summary>
 		/// <returns>Returns the string[] array.</returns>
@@ -2215,7 +2195,7 @@ namespace DotNetWikiBot
 				matchStrings[i] = matches[i].Value;
 			return matchStrings;
 		}
-		
+
 		/// <summary>Returns the array of strings, containing interwiki links,
 		/// found in page text. But no displayed links are returned,
 		/// like [[:de:Stern]] - these are returned by GetSisterWikiLinks(true)
@@ -2225,7 +2205,7 @@ namespace DotNetWikiBot
 		{
 			return GetInterWikiLinks(false);
 		}
-		
+
 		/// <summary>Returns the array of strings, containing interwiki links,
 		/// found in page text. Displayed links like [[:de:Stern]] are not returned,
 		/// these are returned by GetSisterWikiLinks(true) function.</summary>
@@ -2246,7 +2226,7 @@ namespace DotNetWikiBot
 			}
 			return matchStrings;
 		}
-		
+
 		/// <summary>Adds interwiki links to the page. It doesn't remove or replace old
 		/// interwiki links, this can be done by calling RemoveInterWikiLinks function
 		/// or manually, if necessary.</summary>
@@ -2259,7 +2239,7 @@ namespace DotNetWikiBot
 			List<string> iwList = new List<string>(iwikiLinks);
 			AddInterWikiLinks(iwList);
 		}
-		
+
 		/// <summary>Adds interwiki links to the page. It doesn't remove or replace old
 		/// interwiki links, this can be done by calling RemoveInterWikiLinks function
 		/// or manually, if necessary.</summary>
@@ -2280,7 +2260,7 @@ namespace DotNetWikiBot
 			foreach(string str in iwikiLinks)
 				text += "\r\n[[" + str + "]]";
 		}
-		
+
 		/// <summary>Sorts interwiki links in page text according to site rules.
 		/// Only rules for some Wikipedia projects are implemented so far.
 		/// In other cases links are ordered alphabetically.</summary>
@@ -2288,7 +2268,7 @@ namespace DotNetWikiBot
 		{
 			AddInterWikiLinks(new string[] { null });
 		}
-		
+
 		/// <summary>This internal function sorts interwiki links in page text according 
 		/// to site rules. Only rules for some Wikipedia projects are implemented
 		/// so far. In other cases links are ordered alphabetically.</summary>
@@ -2299,20 +2279,20 @@ namespace DotNetWikiBot
 			string[] iwikiLinksOrder = null;
 			if (iwList.Count < 2)
 				return;
-			switch(site.site) {		// special sort orders
-			case "http://en.wikipedia.org":
-			case "http://simple.wikipedia.org":
-			case "http://be-x-old.wikipedia.org":
-			case "http://lb.wikipedia.org":
-			case "http://mk.wikipedia.org":
-			case "http://no.wikipedia.org":
-			case "http://pl.wikipedia.org": iwikiLinksOrder = Site.iwikiLinksOrderByLocal; break;
-			case "http://ms.wikipedia.org":
-			case "http://et.wikipedia.org":
-			case "http://vi.wikipedia.org":
-			case "http://fi.wikipedia.org": iwikiLinksOrder = Site.iwikiLinksOrderByLocalFW; break;
-			case "http://sr.wikipedia.org": iwikiLinksOrder = Site.iwikiLinksOrderByLatinFW; break;
-			default: iwList.Sort(); break;
+			switch(site.site) {    // special sort orders
+				case "http://en.wikipedia.org":
+				case "http://simple.wikipedia.org":
+				case "http://be-x-old.wikipedia.org":
+				case "http://lb.wikipedia.org":
+				case "http://mk.wikipedia.org":
+				case "http://no.wikipedia.org":
+				case "http://pl.wikipedia.org": iwikiLinksOrder = Site.iwikiLinksOrderByLocal; break;
+				case "http://ms.wikipedia.org":
+				case "http://et.wikipedia.org":
+				case "http://vi.wikipedia.org":
+				case "http://fi.wikipedia.org": iwikiLinksOrder = Site.iwikiLinksOrderByLocalFW; break;
+				case "http://sr.wikipedia.org": iwikiLinksOrder = Site.iwikiLinksOrderByLatinFW; break;
+				default: iwList.Sort(); break;
 			}
 			if (iwikiLinksOrder == null)
 				return;
@@ -2328,25 +2308,25 @@ namespace DotNetWikiBot
 				if (!sortedIwikiList.Contains(iwikiLink))
 					sortedIwikiList.Add(iwikiLink);
 			iwList = sortedIwikiList;
-			switch(site.site) {		// special sort orders, based on default iwList.Sort();
-			case "http://hu.wikipedia.org":
-			case "http://he.wikipedia.org": iwList.Remove("en"); iwList.Insert(0, "en"); break;
-			case "http://nn.wikipedia.org":
+			switch(site.site) {    // special sort orders, based on default iwList.Sort();
+				case "http://hu.wikipedia.org":
+				case "http://he.wikipedia.org": iwList.Remove("en"); iwList.Insert(0, "en"); break;
+				case "http://nn.wikipedia.org":
 				iwList.Remove("no"); iwList.Remove("sv"); iwList.Remove("da");
 				iwList.InsertRange(0, new string[] { "no", "sv", "da" } ); break;
-			case "http://te.wikipedia.org":
+				case "http://te.wikipedia.org":
 				iwList.Remove("en"); iwList.Remove("hi"); iwList.Remove("kn");
 				iwList.Remove("ta"); iwList.Remove("ml");
 				iwList.InsertRange(0, new string[] { "en", "hi", "kn", "ta", "ml" } ); break;
-			case "http://yi.wikipedia.org":
+				case "http://yi.wikipedia.org":
 				iwList.Remove("en"); iwList.Remove("he"); iwList.Remove("de");
 				iwList.InsertRange(0, new string[] { "en", "he", "de" } ); break;
-			case "http://ur.wikipedia.org":
+				case "http://ur.wikipedia.org":
 				iwList.Remove("ar"); iwList.Remove("fa"); iwList.Remove("en");
 				iwList.InsertRange(0, new string[] { "ar", "fa", "en" } ); break;
 			}
 		}
-		
+
 		/// <summary>Removes all interwiki links from text of page.</summary>
 		public void RemoveInterWikiLinks()
 		{
@@ -2355,7 +2335,7 @@ namespace DotNetWikiBot
 			text = Site.iwikiLinkRE.Replace(text, "");
 			text = text.TrimEnd("\r\n".ToCharArray());
 		}
-		
+
 		/// <summary>Returns the array of strings, containing links to sister Wikimedia
 		/// Foundation Projects, found in page text.</summary>
 		/// <param name="includeDisplayedInterWikiLinks">Include displayed interwiki
@@ -2378,7 +2358,7 @@ namespace DotNetWikiBot
 					matchStrings[i] = iwikiMatches[j].Groups[1].Value;
 			return matchStrings;
 		}
-		
+
 		/// <summary>Function converts basic HTML markup in page text to wiki
 		/// markup, except for tables markup, that is left unchanged. Use
 		/// ConvertHtmlTablesToWikiTables function to convert HTML
@@ -2401,7 +2381,7 @@ namespace DotNetWikiBot
 			text = Regex.Replace(text, "(?i)\n?<hr ?/?>\n?", "\n----\n");
 			text = Regex.Replace(text, "(?i)<(hr|br)( [^/>]+?)? ?/?>", "<$1$2 />");
 		}
-		
+
 		/// <summary>Function converts HTML table markup in page text to wiki
 		/// table markup.</summary>
 		public void ConvertHtmlTablesToWikiTables()
@@ -2422,7 +2402,7 @@ namespace DotNetWikiBot
 			text = Regex.Replace(text, "\n(\\||\\|\\+|!) \\| ", "\n$1 ");
 			text = text.Replace("\n\n|", "\n|");
 		}
-		
+
 		/// <summary>Returns the array of strings, containing category names found in
 		/// page text with namespace prefix, but without sorting keys. Use the result
 		/// strings to call FillFromCategory(string) or FillFromCategoryTree(string)
@@ -2433,7 +2413,7 @@ namespace DotNetWikiBot
 		{
 			return GetCategories(true, false);
 		}
-		
+
 		/// <summary>Returns the array of strings, containing category names found in
 		/// page text. Categories, added by templates, are not returned. Use GetAllCategories
 		/// function to get categories added by templates too.</summary>
@@ -2456,7 +2436,7 @@ namespace DotNetWikiBot
 			}
 			return matchStrings;
 		}
-		
+
 		/// <summary>Returns the array of strings, containing category names found in
 		/// page text and added by page's templates. Categories are returned  with
 		/// namespace prefix, but without sorting keys. Use the result strings
@@ -2466,7 +2446,7 @@ namespace DotNetWikiBot
 		{
 			return GetAllCategories(true);
 		}
-		
+
 		/// <summary>Returns the array of strings, containing category names found in
 		/// page text and added by page's templates.</summary>
 		/// <param name="withNameSpacePrefix">If true, function returns strings with
@@ -2483,7 +2463,7 @@ namespace DotNetWikiBot
 			else
 				uri = site.site + site.indexPath + "index.php?title=" +
 					HttpUtility.UrlEncode(title) + "&redirect=no";
-			
+
 			string xpathQuery;
 			if (Bot.useBotQuery == true && site.botQuery == true && site.ver >= new Version(1,15))
 				xpathQuery = "//categories/cl/@title";
@@ -2492,7 +2472,7 @@ namespace DotNetWikiBot
 					"/ns:span/ns:a";
 			else
 				xpathQuery = "//ns:div[ @id='catlinks' ]/ns:p/ns:span/ns:a";
-			
+
 			string src = site.GetPageHTM(uri);
 			if (Bot.useBotQuery != true || site.botQuery != true || site.ver < new Version(1,15)) {
 				int startPos = src.IndexOf("<!-- start content -->");
@@ -2506,7 +2486,7 @@ namespace DotNetWikiBot
 						src = src.Remove(startPos, endPos - startPos);
 				}
 			}
-			
+
 			XPathNodeIterator iterator = site.GetXMLIterator(src, xpathQuery);
 			string[] matchStrings = new string[iterator.Count];
 			iterator.MoveNext();
@@ -2515,10 +2495,10 @@ namespace DotNetWikiBot
 					site.RemoveNSPrefix(HttpUtility.HtmlDecode(iterator.Current.Value), 14);
 				iterator.MoveNext();
 			}
-			
+
 			return matchStrings;
 		}
-		
+
 		/// <summary>Adds the page to the specified category by adding
 		/// link to that category in page text. If the link to the specified category
 		/// already exists, the function does nothing.</summary>
@@ -2544,7 +2524,7 @@ namespace DotNetWikiBot
 				AddInterWikiLinks(iw);
 			text = text.TrimEnd("\r\n".ToCharArray());
 		}
-		
+
 		/// <summary>Removes the page from category by deleting link to that category in
 		/// page text.</summary>
 		/// <param name="categoryName">Category name, with or without prefix.</param>
@@ -2569,7 +2549,7 @@ namespace DotNetWikiBot
 			                     Site.wikiNSpaces["14"] + "): ?" + regexCategoryName + @"(\|.*?)?]]\r?\n?", "");
 			text = text.TrimEnd("\r\n".ToCharArray());
 		}
-		
+
 		/// <summary>Returns the array of strings, containing titles of templates, found on page.
 		/// The "msgnw:" template modifier is not returned.
 		/// Links to templates (like [[:Template:...]]) are not returned. Templates,
@@ -2594,14 +2574,14 @@ namespace DotNetWikiBot
 				match = matches[i].Groups[1].Value;
 				matchLowerCase = match.ToLower();
 				foreach (string mediaWikiVar in Site.mediaWikiVars)
-				if (matchLowerCase == mediaWikiVar) {
+					if (matchLowerCase == mediaWikiVar) {
 					match = "";
 					break;
 				}
 				if (string.IsNullOrEmpty(match))
 					continue;
 				foreach (string parserFunction in Site.parserFunctions)
-				if (matchLowerCase.StartsWith(parserFunction)) {
+					if (matchLowerCase.StartsWith(parserFunction)) {
 					match = "";
 					break;
 				}
@@ -2618,7 +2598,7 @@ namespace DotNetWikiBot
 			Array.Resize(ref matchStrings, j);
 			return matchStrings;
 		}
-		
+
 		/// <summary>Returns the array of strings, containing templates, found on page
 		/// Everything inside braces is returned with all parameters
 		/// untouched. Links to templates (like [[:Template:...]]) are not returned. Templates,
@@ -2660,7 +2640,7 @@ namespace DotNetWikiBot
 			Array.Reverse(arr);
 			return arr;
 		}
-		
+
 		/// <summary>Adds a specified template to the end of the page text
 		/// (right before categories).</summary>
 		/// <param name="templateText">Complete template in double brackets,
@@ -2684,7 +2664,7 @@ namespace DotNetWikiBot
 				text = text.TrimEnd("\r\n".ToCharArray());
 			}
 		}
-		
+
 		/// <summary>Removes all instances of a specified template from page text.</summary>
 		/// <param name="templateTitle">Title of template to remove.</param>
 		public void RemoveTemplate(string templateTitle)
@@ -2698,7 +2678,7 @@ namespace DotNetWikiBot
 			text = Regex.Replace(text, @"(?s)\{\{\s*" + templateTitle +
 			                     @"(.*?)}}\r?\n?", "");
 		}
-		
+
 		/// <summary>Returns specified parameter of a specified template. If several instances
 		/// of specified template are found in text of this page, all parameter values
 		/// are returned.</summary>
@@ -2717,7 +2697,7 @@ namespace DotNetWikiBot
 				throw new ArgumentNullException("templateParameter");
 			if (string.IsNullOrEmpty(text))
 				throw new ArgumentNullException("text");
-			
+
 			List<string> parameterValues = new List<string>();
 			Dictionary <string, string> parameters;
 			templateTitle = templateTitle.Trim();
@@ -2735,7 +2715,7 @@ namespace DotNetWikiBot
 			}
 			return parameterValues;
 		}
-		
+
 		/// <summary>This helper method returns specified parameter of a first found instance of
 		/// specified template. If no such template or no such parameter was found,
 		/// empty string "" is returned.</summary>
@@ -2753,7 +2733,7 @@ namespace DotNetWikiBot
 				return "";
 			else return paramsList[0];
 		}
-		
+
 		/// <summary>Sets the specified parameter of the specified template to new value.
 		/// If several instances of specified template are found in text of this page, either
 		/// first value can be set, or all values in all instances.</summary>
@@ -2774,7 +2754,7 @@ namespace DotNetWikiBot
 				throw new ArgumentNullException("templateParameter");
 			if (string.IsNullOrEmpty(text))
 				throw new ArgumentNullException("text");
-			
+
 			int i = 0;
 			Dictionary <string, string> parameters;
 			templateTitle = templateTitle.Trim();
@@ -2802,7 +2782,7 @@ namespace DotNetWikiBot
 			}
 			return i;
 		}
-		
+
 		/// <summary>Removes the specified parameter of the specified template.
 		/// If several instances of specified template are found in text of this page, either
 		/// first instance can be affected or all instances.</summary>
@@ -2816,7 +2796,7 @@ namespace DotNetWikiBot
 		{
 			return SetTemplateParameter(templateTitle, templateParameter, null, firstTemplateOnly);
 		}
-		
+
 		/// <summary>Returns the array of strings, containing names of files,
 		/// embedded in page, including images in galleries (inside "gallery" tag).
 		/// But no links to images and files, like [[:Image:...]] or [[:File:...]] or
@@ -2830,7 +2810,7 @@ namespace DotNetWikiBot
 		{
 			return GetImagesEx(withNameSpacePrefix, false);
 		}
-		
+
 		/// <summary>Returns the array of strings, containing names of files,
 		/// mentioned on a page.</summary>
 		/// <param name="withNameSpacePrefix">If true, function returns strings with
@@ -2852,7 +2832,7 @@ namespace DotNetWikiBot
 			MatchCollection matches;
 			if (Regex.IsMatch(text, "(?is)<gallery>.*</gallery>"))
 				matches = Regex.Matches(text, "(?i)" + (includeFileLinks ? "" : "(?<!:)") +
-				                        "(" + nsPrefixes + ")(:)(.*?)(\\||\r|\n|]])");		// FIXME: inexact matches
+				                        "(" + nsPrefixes + ")(:)(.*?)(\\||\r|\n|]])");    // FIXME: inexact matches
 			else
 				matches = Regex.Matches(text, @"\[\[" + (includeFileLinks ? ":?" : "") +
 				                        "(?i)((" + nsPrefixes + @"):(.+?))(\|(.+?))*?]]");
@@ -2865,7 +2845,7 @@ namespace DotNetWikiBot
 			}
 			return matchStrings;
 		}
-		
+
 		/// <summary>Identifies the namespace of the page.</summary>
 		/// <returns>Returns the integer key of the namespace.</returns>
 		public int GetNamespace()
@@ -2881,20 +2861,20 @@ namespace DotNetWikiBot
 			}
 			return 0;
 		}
-		
+
 		/// <summary>Sends page title to console.</summary>
 		public void ShowTitle()
 		{
 			Console.Write("\n" + Bot.Msg("The title of this page is \"{0}\".") + "\n", title);
 		}
-		
+
 		/// <summary>Sends page text to console.</summary>
 		public void ShowText()
 		{
 			Console.Write("\n" + Bot.Msg("The text of \"{0}\" page:"), title);
 			Console.Write("\n\n" + text + "\n\n");
 		}
-		
+
 		/// <summary>Renames the page.</summary>
 		/// <param name="newTitle">New title of that page.</param>
 		/// <param name="reason">Reason for renaming.</param>
@@ -2929,7 +2909,7 @@ namespace DotNetWikiBot
 				Bot.Msg("Page \"{0}\" was successfully renamed to \"{1}\"."), title, newTitle);
 			title = newTitle;
 		}
-		
+
 		/// <summary>Deletes the page. Sysop rights are needed to delete page.</summary>
 		/// <param name="reason">Reason for deleting.</param>
 		public void Delete(string reason)
@@ -2960,7 +2940,7 @@ namespace DotNetWikiBot
 			title = "";
 		}
 	}
-	
+
 	/// <summary>Class defines a set of wiki pages (constructed inside as List object).</summary>
 	[ClassInterface(ClassInterfaceType.AutoDispatch)]
 	[Serializable]
@@ -2970,7 +2950,7 @@ namespace DotNetWikiBot
 		public List<Page> pages = new List<Page>();
 		/// <summary>Site, on which the pages are located.</summary>
 		public Site site;
-		
+
 		/// <summary>This constructor creates PageList object with specified Site object and fills
 		/// it with Page objects with specified titles. When constructed, new Page objects
 		/// in PageList don't contain text. Use Load() method to get text from live wiki,
@@ -2985,7 +2965,7 @@ namespace DotNetWikiBot
 				pages.Add(new Page(site, pageName));
 			CorrectNSPrefixes();
 		}
-		
+
 		/// <summary>This constructor creates PageList object with specified Site object and fills
 		/// it with Page objects with specified titles. When constructed, new Page objects
 		/// in PageList don't contain text. Use Load() method to get text from live wiki,
@@ -3000,7 +2980,7 @@ namespace DotNetWikiBot
 				pages.Add(new Page(site, pageName));
 			CorrectNSPrefixes();
 		}
-		
+
 		/// <summary>This constructor creates empty PageList object with specified
 		/// Site object.</summary>
 		/// <param name="site">Site object, it must be constructed beforehand.</param>
@@ -3009,7 +2989,7 @@ namespace DotNetWikiBot
 		{
 			this.site = site;
 		}
-		
+
 		/// <summary>This constructor creates empty PageList object, Site object with default
 		/// properties is created internally and logged in. Constructing new Site object
 		/// is too slow, don't use this constructor needlessly.</summary>
@@ -3018,7 +2998,7 @@ namespace DotNetWikiBot
 		{
 			site = new Site();
 		}
-		
+
 		/// <summary>This index allows to call pageList[i] instead of pageList.pages[i].</summary>
 		/// <param name="index">Zero-based index.</param>
 		/// <returns>Returns the Page object.</returns>
@@ -3027,7 +3007,7 @@ namespace DotNetWikiBot
 			get { return pages[index]; }
 			set { pages[index] = value; }
 		}
-		
+
 		/// <summary>This function allows to access individual pages in this PageList.
 		/// But it's better to use simple pageList[i] index, when it is possible.</summary>
 		/// <param name="index">Zero-based index.</param>
@@ -3036,7 +3016,7 @@ namespace DotNetWikiBot
 		{
 			return pages[index];
 		}
-		
+
 		/// <summary>This function allows to set individual pages in this PageList.
 		/// But it's better to use simple pageList[i] index, when it is possible.</summary>
 		/// <param name="page">Page object to set in this PageList.</param>
@@ -3046,7 +3026,7 @@ namespace DotNetWikiBot
 		{
 			pages[index] = page;
 		}
-		
+
 		/// <summary>This index allows to call pageList["title"]. Don't forget to use correct
 		/// local namespace prefixes. Call CorrectNSPrefixes function to correct namespace
 		/// prefixes in a whole PageList at once.</summary>
@@ -3067,7 +3047,7 @@ namespace DotNetWikiBot
 						pages[i] = value;
 			}
 		}
-		
+
 		/// <summary>This standard internal function allows to directly use PageList objects
 		/// in "foreach" statements.</summary>
 		/// <returns>Returns IEnumerator object.</returns>
@@ -3075,14 +3055,14 @@ namespace DotNetWikiBot
 		{
 			return pages.GetEnumerator();
 		}
-		
+
 		/// <summary>This function adds specified page to the end of this PageList.</summary>
 		/// <param name="page">Page object to add.</param>
 		public void Add(Page page)
 		{
 			pages.Add(page);
 		}
-		
+
 		/// <summary>Inserts an element into this PageList at the specified index.</summary>
 		/// <param name="page">Page object to insert.</param>
 		/// <param name="index">Zero-based index.</param>
@@ -3090,7 +3070,7 @@ namespace DotNetWikiBot
 		{
 			pages.Insert(index, page);
 		}
-		
+
 		/// <summary>This function returns true, if in this PageList there exists a page with
 		/// the same title, as a page specified as a parameter.</summary>
 		/// <param name="page">.</param>
@@ -3104,7 +3084,7 @@ namespace DotNetWikiBot
 					return true;
 			return false;
 		}
-		
+
 		/// <summary>This function returns true, if a page with specified title exists
 		/// in this PageList.</summary>
 		/// <param name="title">Title of page to check.</param>
@@ -3119,21 +3099,21 @@ namespace DotNetWikiBot
 					return true;
 			return false;
 		}
-		
+
 		/// <summary>This function returns the number of pages in PageList.</summary>
 		/// <returns>Number of pages as positive integer value.</returns>
 		public int Count()
 		{
 			return pages.Count;
 		}
-		
+
 		/// <summary>Removes page at specified index from PageList.</summary>
 		/// <param name="index">Zero-based index.</param>
 		public void RemoveAt(int index)
 		{
 			pages.RemoveAt(index);
 		}
-		
+
 		/// <summary>Removes a page with specified title from this PageList.</summary>
 		/// <param name="title">Title of page to remove.</param>
 		public void Remove(string title)
@@ -3142,7 +3122,7 @@ namespace DotNetWikiBot
 				if (pages[i].title == title)
 					pages.RemoveAt(i);
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from "Special:Allpages" MediaWiki page.
 		/// That means a list of pages in alphabetical order.</summary>
 		/// <param name="firstPageTitle">Title of page to start enumerating from. The title
@@ -3198,7 +3178,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(Bot.Msg("PageList filled with {0} page titles from " +
 			                          "\"Special:Allpages\" MediaWiki page."), (pages.Count - count).ToString());
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from specified special page,
 		/// e.g. "Deadendpages". The function does not filter namespaces. And the function
 		/// does not clear the existing PageList, so new titles will be added.</summary>
@@ -3231,7 +3211,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(Bot.Msg("PageList filled with {0} page titles from " +
 			                          "\"Special:{1}\" page."), matches.Count, pageTitle);
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from specified special page,
 		/// e.g. "Deadendpages". The function does not filter namespaces. And the function
 		/// does not clear the existing PageList, so new titles will be added.
@@ -3262,7 +3242,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(Bot.Msg("PageList filled with {0} page titles from " +
 			                          "\"Special:{1}\" page."), ni.Count, pageTitle);
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from specified MediaWiki events log.
 		/// The function does not filter namespaces. And the function does not clear the
 		/// existing PageList, so new titles will be added.</summary>
@@ -3299,7 +3279,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(Bot.Msg("PageList filled with {0} page titles from \"{1}\" log."),
 			                  matches.Count, logType);
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from specified list, produced by
 		/// bot query interface ("api.php" MediaWiki extension). The function
 		/// does not clear the existing PageList, so new titles will be added.</summary>
@@ -3368,7 +3348,7 @@ namespace DotNetWikiBot
 				                          "from \"{1}\" bot interface list."),
 				                  (pages.Count - count).ToString(), listType);
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from recent changes page,
 		/// "Special:Recentchanges". File uploads, page deletions and page renamings are
 		/// not included, use FillFromCustomLog function instead to fill from respective logs.
@@ -3383,7 +3363,7 @@ namespace DotNetWikiBot
 		/// <param name="limit">Maximum number of changes to get.</param>
 		/// <param name="days">Get changes for this number of recent days.</param>
 		public void FillFromRecentChanges(bool hideMinor, bool hideBots, bool hideAnons,
-		                                  bool hideLogged, bool hideSelf, int limit, int days)	// TO DO: hideReviewed
+		                                  bool hideLogged, bool hideSelf, int limit, int days)    // TO DO: hideReviewed
 		{
 			if (limit <= 0)
 				throw new ArgumentOutOfRangeException("limit", Bot.Msg("Limit must be positive."));
@@ -3405,7 +3385,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(Bot.Msg("PageList filled with {0} page titles from " +
 			                          "\"Special:Recentchanges\" page."), matches.Count);
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from specified wiki category page, excluding
 		/// subcategories. Use FillSubsFromCategory function to get subcategories.</summary>
 		/// <param name="categoryName">Category name, with or without prefix.</param>
@@ -3424,7 +3404,7 @@ namespace DotNetWikiBot
 				Console.Error.WriteLine(
 					Bot.Msg("Nothing was found in \"{0}\" category."), categoryName);
 		}
-		
+
 		/// <summary>Gets subcategories titles for this PageList from specified wiki category page,
 		/// excluding other pages. Use FillFromCategory function to get other pages.</summary>
 		/// <param name="categoryName">Category name, with or without prefix.</param>
@@ -3442,7 +3422,7 @@ namespace DotNetWikiBot
 				Console.Error.WriteLine(
 					Bot.Msg("Nothing was found in \"{0}\" category."), categoryName);
 		}
-		
+
 		/// <summary>This internal function gets all page titles for this PageList from specified
 		/// category page, including subcategories.</summary>
 		/// <param name="categoryName">Category name, with or without prefix.</param>
@@ -3485,7 +3465,7 @@ namespace DotNetWikiBot
 			}
 			while(nextPortionRE.IsMatch(src));
 		}
-		
+
 		/// <summary>This internal function gets all page titles for this PageList from specified
 		/// category using "api.php" MediaWiki extension (bot interface), if it is available.
 		/// It gets subcategories too.</summary>
@@ -3515,7 +3495,7 @@ namespace DotNetWikiBot
 				FillAllFromCategory(categoryName);
 			}
 		}
-		
+
 		/// <summary>This internal function is kept for backwards compatibility only.
 		/// It gets all pages and subcategories in specified category using old obsolete 
 		/// "query.php" bot interface and adds all found pages and subcategories to PageList object.
@@ -3540,7 +3520,7 @@ namespace DotNetWikiBot
 			}
 			while(nextPortionRE.IsMatch(src));
 		}
-		
+
 		/// <summary>Gets all levels of subcategories of some wiki category (that means
 		/// subcategories, sub-subcategories, and so on) and fills this PageList with titles
 		/// of all pages, found in all levels of subcategories. The multiplicates of recurring pages
@@ -3560,7 +3540,7 @@ namespace DotNetWikiBot
 				Console.Error.WriteLine(
 					Bot.Msg("Nothing was found in \"{0}\" category."), categoryName);
 		}
-		
+
 		/// <summary>Gets all levels of subcategories of some wiki category (that means
 		/// subcategories, sub-subcategories, and so on) and fills this PageList with found
 		/// subcategory titles. Use FillFromCategoryTree function instead to get pages of other
@@ -3579,7 +3559,7 @@ namespace DotNetWikiBot
 				Console.Error.WriteLine(
 					Bot.Msg("Nothing was found in \"{0}\" category."), categoryName);
 		}
-		
+
 		/// <summary>Gets all levels of subcategories of some wiki category (that means
 		/// subcategories, sub-subcategories, and so on) and fills this PageList with titles
 		/// of all pages, found in all levels of subcategories, including the titles of
@@ -3595,13 +3575,13 @@ namespace DotNetWikiBot
 			FillAllFromCategory(categoryName);
 			doneCats.Add(categoryName);
 			for (int i = 0; i < Count(); i++)
-			if (pages[i].GetNamespace() == 14 && !doneCats.Contains(pages[i].title)) {
+				if (pages[i].GetNamespace() == 14 && !doneCats.Contains(pages[i].title)) {
 				FillAllFromCategory(pages[i].title);
 				doneCats.Add(pages[i].title);
 			}
 			RemoveRecurring();
 		}
-		
+
 		/// <summary>Gets page history and fills this PageList with specified number of recent page
 		/// revisions. Only revision identifiers, user names, timestamps and comments are
 		/// loaded, not the texts. Call Load() (but not LoadEx) to load the texts of page revisions.
@@ -3649,7 +3629,7 @@ namespace DotNetWikiBot
 						             out p.lastBytesModified);
 					else if(reader.Name == "span" && reader["class"] == "comment") {
 						p.comment = Regex.Replace(reader.ReadInnerXml().Trim(), "<.+?>", "");
-						p.comment = p.comment.Substring(1, p.comment.Length - 2);	// brackets
+						p.comment = p.comment.Substring(1, p.comment.Length - 2);    // brackets
 					}
 					if(reader.Name == "li" && reader.NodeType == XmlNodeType.EndElement)
 						pages.Add(p);
@@ -3658,7 +3638,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(Bot.Msg("PageList filled with {0} last revisons of \"{1}\" page..."),
 			                  pages.Count, pageTitle);
 		}
-		
+
 		/// <summary>Gets page history using  bot query interface ("api.php" MediaWiki extension)
 		/// and fills this PageList with specified number of last page revisions, optionally loading
 		/// revision texts as well. On most sites not more than 50 last revisions can be obtained.
@@ -3704,7 +3684,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(Bot.Msg("PageList filled with {0} last revisons of \"{1}\" page."),
 			                  pages.Count, pageTitle);
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from links in some wiki page. But only
 		/// links to articles and pages from Project, Template and Help namespaces will be
 		/// retrieved. And no interwiki links. Use FillFromAllPageLinks function instead
@@ -3717,7 +3697,7 @@ namespace DotNetWikiBot
 			FillFromAllPageLinks(pageTitle);
 			FilterNamespaces(new int[] {0,4,10,12});
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from all links in some wiki page. All links
 		/// will be retrieved, from all standard namespaces, except interwiki links to other
 		/// sites. Use FillFromPageLinks function instead to filter namespaces
@@ -3742,7 +3722,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(
 				Bot.Msg("PageList filled with links, found on \"{0}\" page."), pageTitle);
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from "Special:Whatlinkshere" Mediawiki page
 		/// of specified page. That means the titles of pages, referring to the specified page.
 		/// But not more than 5000 titles. The function does not internally remove redirecting
@@ -3766,7 +3746,7 @@ namespace DotNetWikiBot
 				Bot.Msg("PageList filled with titles of pages, referring to \"{0}\" page."),
 				pageTitle);
 		}
-		
+
 		/// <summary>Gets titles of pages which transclude the specified page. No more than
 		/// 5000 titles are listed. The function does not internally remove redirecting
 		/// pages from results. Call RemoveRedirects() manually, if you need it. And the
@@ -3787,7 +3767,7 @@ namespace DotNetWikiBot
 				Bot.Msg("PageList filled with titles of pages, which transclude \"{0}\" page."),
 				pageTitle);
 		}
-		
+
 		/// <summary>Gets titles of pages, in which the specified image file is included.
 		/// Function also works with non-image files.</summary>
 		/// <param name="imageFileTitle">File title. With or without "Image:" or
@@ -3819,7 +3799,7 @@ namespace DotNetWikiBot
 					Bot.Msg("PageList filled with titles of pages, that contain \"{0}\" image."),
 					imageFileTitle);
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from user contributions
 		/// of specified user. The function does not internally remove redirecting
 		/// pages from the results. Call RemoveRedirects() manually, if you need it. And the
@@ -3842,7 +3822,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(
 				Bot.Msg("PageList filled with user's \"{0}\" contributions."), userName);
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from watchlist
 		/// of bot account. The function does not internally remove redirecting
 		/// pages from the results. Call RemoveRedirects() manually, if you need that. And the
@@ -3856,7 +3836,7 @@ namespace DotNetWikiBot
 				pages.Add(new Page(site, HttpUtility.HtmlDecode(match.Groups[1].Value)));
 			Console.WriteLine(Bot.Msg("PageList filled with bot account's watchlist."));
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from list of recently changed
 		/// watched articles (watched by bot account). The function does not internally
 		/// remove redirecting pages from the results. Call RemoveRedirects() manually,
@@ -3873,7 +3853,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(
 				Bot.Msg("PageList filled with changed pages from bot account's watchlist."));
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from wiki site internal search results.
 		/// The function does not filter namespaces. And the function does not clear
 		/// the existing PageList, so new titles will be added.</summary>
@@ -3896,7 +3876,7 @@ namespace DotNetWikiBot
 				pages.Add(new Page(site, HttpUtility.HtmlDecode(match.Groups[1].Value)));
 			Console.WriteLine(Bot.Msg("PageList filled with search results."));
 		}
-		
+
 		/// <summary>Gets page titles for this PageList from www.google.com search results.
 		/// The function does not filter namespaces. And the function does not clear
 		/// the existing PageList, so new titles will be added.</summary>
@@ -3917,14 +3897,14 @@ namespace DotNetWikiBot
 				"(" + (string.IsNullOrEmpty(site.wikiPath) == false ?
 			     Regex.Escape(site.wikiPath) + "|" : "") +
 				Regex.Escape(site.indexPath) + @"index\.php\?title=)" +
-				"([^\"]+?)\"");		// ..." class=\"?l\"?
+				"([^\"]+?)\"");    // ..." class=\"?l\"?
 			MatchCollection matches = GoogleLinkToPageRE.Matches(src);
 			foreach (Match match in matches)
 				pages.Add(new Page(site,
 				                   HttpUtility.UrlDecode(match.Groups[2].Value).Replace("_", " ")));
 			Console.WriteLine(Bot.Msg("PageList filled with www.google.com search results."));
 		}
-		
+
 		/// <summary>Gets page titles from UTF8-encoded file. Each title must be on new line.
 		/// The function does not clear the existing PageList, so new pages will be added.</summary>
 		public void FillFromFile(string filePathName)
@@ -3941,7 +3921,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(
 				Bot.Msg("PageList filled with titles, found in \"{0}\" file."), filePathName);
 		}
-		
+
 		/// <summary>Protects or unprotects all pages in this PageList, so only chosen category
 		/// of users can edit or rename it. Changing page protection modes requires administrator
 		/// (sysop) rights on target wiki.</summary>
@@ -3966,7 +3946,7 @@ namespace DotNetWikiBot
 			foreach (Page p in pages)
 				p.Protect(editMode, renameMode, cascadeMode, expiryDate, reason);
 		}
-		
+
 		/// <summary>Adds all pages in this PageList to bot account's watchlist.</summary>
 		public void Watch()
 		{
@@ -3975,7 +3955,7 @@ namespace DotNetWikiBot
 			foreach (Page p in pages)
 				p.Watch();
 		}
-		
+
 		/// <summary>Removes all pages in this PageList from bot account's watchlist.</summary>
 		public void Unwatch()
 		{
@@ -3984,7 +3964,7 @@ namespace DotNetWikiBot
 			foreach (Page p in pages)
 				p.Unwatch();
 		}
-		
+
 		/// <summary>Removes the pages, that are not in given namespaces.</summary>
 		/// <param name="neededNSs">Array of integers, presenting keys of namespaces
 		/// to retain.</param>
@@ -3995,7 +3975,7 @@ namespace DotNetWikiBot
 				if (Array.IndexOf(neededNSs, pages[i].GetNamespace()) == -1)
 					pages.RemoveAt(i); }
 		}
-		
+
 		/// <summary>Removes the pages, that are in given namespaces.</summary>
 		/// <param name="needlessNSs">Array of integers, presenting keys of namespaces
 		/// to remove.</param>
@@ -4006,7 +3986,7 @@ namespace DotNetWikiBot
 				if (Array.IndexOf(needlessNSs, pages[i].GetNamespace()) != -1)
 					pages.RemoveAt(i); }
 		}
-		
+
 		/// <summary>This function sorts all pages in PageList by titles.</summary>
 		public void Sort()
 		{
@@ -4014,7 +3994,7 @@ namespace DotNetWikiBot
 				throw new WikiBotException(Bot.Msg("The PageList is empty. Nothing to sort."));
 			pages.Sort(ComparePagesByTitles);
 		}
-		
+
 		/// <summary>This internal function compares pages by titles (alphabetically).</summary>
 		/// <returns>Returns 1 if x is greater, -1 if y is greater, 0 if equal.</returns>
 		public int ComparePagesByTitles(Page x, Page y)
@@ -4022,7 +4002,7 @@ namespace DotNetWikiBot
 			int r = string.Compare(x.title, y.title, false, site.langCulture);
 			return (r != 0) ? r/Math.Abs(r) : 0;
 		}
-		
+
 		/// <summary>Removes all pages in PageList from specified category by deleting
 		/// links to that category in pages texts.</summary>
 		/// <param name="categoryName">Category name, with or without prefix.</param>
@@ -4031,7 +4011,7 @@ namespace DotNetWikiBot
 			foreach (Page p in pages)
 				p.RemoveFromCategory(categoryName);
 		}
-		
+
 		/// <summary>Adds all pages in PageList to the specified category by adding
 		/// links to that category in pages texts.</summary>
 		/// <param name="categoryName">Category name, with or without prefix.</param>
@@ -4040,7 +4020,7 @@ namespace DotNetWikiBot
 			foreach (Page p in pages)
 				p.AddToCategory(categoryName);
 		}
-		
+
 		/// <summary>Adds a specified template to the end of all pages in PageList.</summary>
 		/// <param name="templateText">Template text, like "{{template_name|...|...}}".</param>
 		public void AddTemplate(string templateText)
@@ -4048,7 +4028,7 @@ namespace DotNetWikiBot
 			foreach (Page p in pages)
 				p.AddTemplate(templateText);
 		}
-		
+
 		/// <summary>Removes a specified template from all pages in PageList.</summary>
 		/// <param name="templateTitle">Title of template  to remove.</param>
 		public void RemoveTemplate(string templateTitle)
@@ -4056,7 +4036,7 @@ namespace DotNetWikiBot
 			foreach (Page p in pages)
 				p.RemoveTemplate(templateTitle);
 		}
-		
+
 		/// <summary>Loads text for pages in PageList from site via common web interface.
 		/// Please, don't use this function when going to edit big amounts of pages on
 		/// popular public wikis, as it compromises edit conflict detection. In that case,
@@ -4069,7 +4049,7 @@ namespace DotNetWikiBot
 			foreach (Page page in pages)
 				page.Load();
 		}
-		
+
 		/// <summary>Loads texts and metadata for pages in PageList via XML export interface.
 		/// Non-existent pages will be automatically removed from the PageList.
 		/// Please, don't use this function when going to edit big amounts of pages on
@@ -4096,7 +4076,7 @@ namespace DotNetWikiBot
 			}
 			reader.Close();
 		}
-		
+
 		/// <summary>Loads text and metadata for pages in PageList via XML export interface.
 		/// The function uses XPathNavigator and is less efficient than LoadEx().</summary>
 		public void LoadEx2()
@@ -4154,7 +4134,7 @@ namespace DotNetWikiBot
 			}
 			Console.WriteLine(Bot.Msg("Pages download completed."));
 		}
-		
+
 		/// <summary>Loads text and metadata for pages in PageList via XML export interface.
 		/// The function loads pages one by one, it is slightly less efficient
 		/// than LoadEx().</summary>
@@ -4165,7 +4145,7 @@ namespace DotNetWikiBot
 			foreach (Page p in pages)
 				p.LoadEx();
 		}
-		
+
 		/// <summary>Gets page titles and page text from local XML dump.
 		/// This function consumes much resources.</summary>
 		/// <param name="filePathName">The path to and name of the XML dump file as string.</param>
@@ -4181,7 +4161,7 @@ namespace DotNetWikiBot
 			reader.Close();
 			Console.WriteLine(Bot.Msg("XML dump loaded successfully."));
 		}
-		
+
 		/// <summary>Gets page titles and page texts from all ".txt" files in the specified
 		/// directory (folder). Each file becomes a page. Page titles are constructed from
 		/// file names. Page text is read from file contents. If any Unicode numeric codes
@@ -4207,7 +4187,7 @@ namespace DotNetWikiBot
 				pages.Add(p);
 			}
 		}
-		
+
 		/// <summary>Saves all pages in PageList to live wiki site. Uses default bot
 		/// edit comment and default minor edit mark setting ("true" by default). This function
 		/// doesn't limit the saving speed, so in case of working on public wiki, it's better
@@ -4217,7 +4197,7 @@ namespace DotNetWikiBot
 		{
 			Save(Bot.editComment, Bot.isMinorEdit);
 		}
-		
+
 		/// <summary>Saves all pages in PageList to live wiki site. This function
 		/// doesn't limit the saving speed, so in case of working on public wiki, it's better
 		/// to use SaveSmoothly function in order not to overload public server (HTTP errors or
@@ -4229,7 +4209,7 @@ namespace DotNetWikiBot
 			foreach (Page page in pages)
 				page.Save(page.text, comment, isMinorEdit);
 		}
-		
+
 		/// <summary>Saves all pages in PageList to live wiki site. The function waits for 5 seconds
 		/// between each page save operation in order not to overload server. Uses default bot
 		/// edit comment and default minor edit mark setting ("true" by default). This function
@@ -4240,7 +4220,7 @@ namespace DotNetWikiBot
 		{
 			SaveSmoothly(5, Bot.editComment, Bot.isMinorEdit);
 		}
-		
+
 		/// <summary>Saves all pages in PageList to live wiki site. The function waits for specified
 		/// number of seconds between each page save operation in order not to overload server.
 		/// Uses default bot edit comment and default minor edit mark setting
@@ -4251,7 +4231,7 @@ namespace DotNetWikiBot
 		{
 			SaveSmoothly(intervalSeconds, Bot.editComment, Bot.isMinorEdit);
 		}
-		
+
 		/// <summary>Saves all pages in PageList to live wiki site. The function waits for specified
 		/// number of seconds between each page save operation in order not to overload
 		/// server.</summary>
@@ -4268,7 +4248,7 @@ namespace DotNetWikiBot
 				page.Save(page.text, comment, isMinorEdit);
 			}
 		}
-		
+
 		/// <summary>Undoes the last edit of every page in this PageList, so every page text reverts
 		/// to previous contents. The function doesn't affect other operations
 		/// like renaming.</summary>
@@ -4279,7 +4259,7 @@ namespace DotNetWikiBot
 			foreach (Page page in pages)
 				page.Revert(comment, isMinorEdit);
 		}
-		
+
 		/// <summary>Saves titles of all pages in PageList to the specified file. Each title
 		/// on a new line. If the target file already exists, it is overwritten.</summary>
 		/// <param name="filePathName">The path to and name of the target file as string.</param>
@@ -4287,7 +4267,7 @@ namespace DotNetWikiBot
 		{
 			SaveTitlesToFile(filePathName, false);
 		}
-		
+
 		/// <summary>Saves titles of all pages in PageList to the specified file. Each title
 		/// on a separate line. If the target file already exists, it is overwritten.</summary>
 		/// <param name="filePathName">The path to and name of the target file as string.</param>
@@ -4302,7 +4282,7 @@ namespace DotNetWikiBot
 			File.WriteAllText(filePathName, titles.ToString().Trim(), Encoding.UTF8);
 			Console.WriteLine(Bot.Msg("Titles in PageList saved to \"{0}\" file."), filePathName);
 		}
-		
+
 		/// <summary>Saves the contents of all pages in pageList to ".txt" files in specified
 		/// directory. Each page is saved to separate file, the name of that file is constructed
 		/// from page title. Forbidden characters in filenames are replaced with their
@@ -4318,7 +4298,7 @@ namespace DotNetWikiBot
 				page.SaveToFile();
 			Directory.SetCurrentDirectory(curDirPath);
 		}
-		
+
 		/// <summary>Loads the contents of all pages in pageList from live site via XML export
 		/// and saves the retrieved XML content to the specified file. The functions just dumps
 		/// data, it does not load pages in PageList itself, call LoadEx() or
@@ -4344,7 +4324,7 @@ namespace DotNetWikiBot
 			Console.WriteLine(
 				Bot.Msg("XML dump successfully saved in \"{0}\" file."), filePathName);
 		}
-		
+
 		/// <summary>Removes all empty pages from PageList. But firstly don't forget to load
 		/// the pages from site using pageList.LoadEx().</summary>
 		public void RemoveEmpty()
@@ -4353,19 +4333,19 @@ namespace DotNetWikiBot
 				if (pages[i].IsEmpty())
 					pages.RemoveAt(i);
 		}
-		
+
 		/// <summary>Removes all recurring pages from PageList. Only one page with some title will
 		/// remain in PageList. This makes all page elements in PageList unique.</summary>
 		public void RemoveRecurring()
 		{
 			for (int i=pages.Count-1; i >= 0; i--)
 				for (int j=i-1; j >= 0; j--)
-				if (pages[i].title == pages[j].title) {
+					if (pages[i].title == pages[j].title) {
 					pages.RemoveAt(i);
 					break;
 				}
 		}
-		
+
 		/// <summary>Removes all redirecting pages from PageList. But firstly don't forget to load
 		/// the pages from site using pageList.LoadEx().</summary>
 		public void RemoveRedirects()
@@ -4374,7 +4354,7 @@ namespace DotNetWikiBot
 				if (pages[i].IsRedirect())
 					pages.RemoveAt(i);
 		}
-		
+
 		/// <summary>For all redirecting pages in this PageList, this function loads the titles and
 		/// texts of redirected-to pages.</summary>
 		public void ResolveRedirects()
@@ -4386,7 +4366,7 @@ namespace DotNetWikiBot
 				page.Load();
 			}
 		}
-		
+
 		/// <summary>Removes all disambiguation pages from PageList. But firstly don't
 		/// forget to load the pages from site using pageList.LoadEx().</summary>
 		public void RemoveDisambigs()
@@ -4395,20 +4375,20 @@ namespace DotNetWikiBot
 				if (pages[i].IsDisambig())
 					pages.RemoveAt(i);
 		}
-		
-		
+
+
 		/// <summary>Removes all pages from PageList.</summary>
 		public void RemoveAll()
 		{
 			pages.Clear();
 		}
-		
+
 		/// <summary>Removes all pages from PageList.</summary>
 		public void Clear()
 		{
 			pages.Clear();
 		}
-		
+
 		/// <summary>Function changes default English namespace prefixes to correct local prefixes
 		/// (e.g. for German wiki-sites it changes "Category:..." to "Kategorie:...").</summary>
 		public void CorrectNSPrefixes()
@@ -4416,14 +4396,14 @@ namespace DotNetWikiBot
 			foreach (Page p in pages)
 				p.CorrectNSPrefix();
 		}
-		
+
 		/// <summary>Shows if there are any Page objects in this PageList.</summary>
 		/// <returns>Returns bool value.</returns>
 		public bool IsEmpty()
 		{
 			return (pages.Count == 0) ? true : false;
 		}
-		
+
 		/// <summary>Sends titles of all contained pages to console.</summary>
 		public void ShowTitles()
 		{
@@ -4432,7 +4412,7 @@ namespace DotNetWikiBot
 				Console.WriteLine(p.title);
 			Console.WriteLine("\n");
 		}
-		
+
 		/// <summary>Sends texts of all contained pages to console.</summary>
 		public void ShowTexts()
 		{
@@ -4445,7 +4425,7 @@ namespace DotNetWikiBot
 			Console.WriteLine("\n");
 		}
 	}
-	
+
 	/// <summary>Class establishes custom application exceptions.</summary>
 	[ClassInterface(ClassInterfaceType.AutoDispatch)]
 	[Serializable]
@@ -4457,21 +4437,21 @@ namespace DotNetWikiBot
 		/// <summary>Just overriding constructor.</summary>
 		/// <returns>Returns Exception object.</returns>
 		public WikiBotException(string message)
-		: base (message) { Console.Beep(); /*Console.ForegroundColor = ConsoleColor.Red;*/ }
+			: base (message) { Console.Beep(); /*Console.ForegroundColor = ConsoleColor.Red;*/ }
 		/// <summary>Just overriding constructor.</summary>
 		/// <returns>Returns Exception object.</returns>
 		public WikiBotException(string message, System.Exception inner)
-		: base (message, inner) {}
+			: base (message, inner) {}
 		/// <summary>Just overriding constructor.</summary>
 		/// <returns>Returns Exception object.</returns>
 		protected WikiBotException(System.Runtime.Serialization.SerializationInfo info,
 		                           System.Runtime.Serialization.StreamingContext context)
-		: base (info, context) {}
+			: base (info, context) {}
 		/// <summary>Destructor is invoked automatically when exception object becomes
 		/// inaccessible.</summary>
 		~WikiBotException() {}
 	}
-	
+
 	/// <summary>Class defines custom XML URL resolver, that has a caching capability. See
 	/// http://www.w3.org/blog/systeam/2008/02/08/w3c_s_excessive_dtd_traffic for details.</summary>
 	//[PermissionSetAttribute(SecurityAction.InheritanceDemand, Name = "FullTrust")]
@@ -4495,7 +4475,7 @@ namespace DotNetWikiBot
 		};
 		/// <summary>Local cache directory.</summary>
 		static string cacheDir = "Cache" + Path.DirectorySeparatorChar;
-		
+
 		/// <summary>Overriding GetEntity() function to implement local cache.</summary>
 		/// <param name="absoluteUri">Absolute URI of requested entity.</param>
 		/// <param name="role">User's role for accessing specified URI.</param>
@@ -4511,7 +4491,7 @@ namespace DotNetWikiBot
 			return base.GetEntity(absoluteUri, role, ofObjectToReturn);
 		}
 	}
-	
+
 	/// <summary>Class defines a Bot instance, some configuration settings
 	/// and some auxiliary functions.</summary>
 	[ClassInterface(ClassInterfaceType.AutoDispatch)]
@@ -4520,7 +4500,7 @@ namespace DotNetWikiBot
 		/// <summary>Title and description of web agent.</summary>
 		public static readonly string botVer = "DotNetWikiBot";
 		/// <summary>Version of DotNetWikiBot Framework.</summary>
-		public static readonly Version version = new Version("2.102");
+		public static readonly Version version = new Version("2.103");
 		/// <summary>Desired bot's messages language (ISO 639-1 language code).
 		/// If not set explicitly, the language will be detected automatically.</summary>
 		/// <example><code>Bot.botMessagesLang = "fr";</code></example>
@@ -4552,7 +4532,7 @@ namespace DotNetWikiBot
 		/// Call EnableLogging function to enable log writing, don't change this variable's
 		/// value manually.</summary>
 		public static string logFile = null;
-		
+
 		/// <summary>Array, containing localized DotNetWikiBot interface messages.</summary>
 		public static SortedDictionary<string, string> messages =
 			new SortedDictionary<string, string>();
@@ -4568,11 +4548,6 @@ namespace DotNetWikiBot
 		/// configuration setting. 0 means true, 1 means false, 2 means unchanged.</summary>
 		public static int unsafeHttpHeaderParsingUsed = 2;
 
-        private static bool ValidateServerCertficate( object sender,   X509Certificate cert,   X509Chain chain,  SslPolicyErrors sslPolicyErrors)
-        {
-            return true;
-        }
-
 		/// <summary>This constructor is used to generate Bot object.</summary>
 		/// <returns>Returns Bot object.</returns>
 		static Bot()
@@ -4586,14 +4561,14 @@ namespace DotNetWikiBot
 				".NET CLR " + Environment.Version.ToString() + ")";
 			ServicePointManager.Expect100Continue = false;
 		}
-		
+
 		/// <summary>The destructor is used to uninitialize Bot objects.</summary>
 		~Bot()
 		{
 			//if (unsafeHttpHeaderParsingUsed != 2)
 			//SwitchUnsafeHttpHeaderParsing(unsafeHttpHeaderParsingUsed == 1 ? true : false);
 		}
-		
+
 		/// <summary>Call this function to make bot write all output to the specified file
 		/// instead of a console. If only error logging is desirable, first call this
 		/// function, and after that call EnableSilenceMode function.</summary>
@@ -4609,7 +4584,7 @@ namespace DotNetWikiBot
 			if (!silenceMode)
 				Console.SetOut(log);
 		}
-		
+
 		/// <summary>Call this function to make bot report only errors and warnings,
 		/// no other messages will be displayed or logged.</summary>
 		public static void EnableSilenceMode()
@@ -4617,7 +4592,7 @@ namespace DotNetWikiBot
 			silenceMode = true;
 			Console.SetOut(new StringWriter());
 		}
-		
+
 		/// <summary>Call this function to disable silent mode previously enabled by
 		/// EnableSilenceMode() function.</summary>
 		public static void DisableSilenceMode()
@@ -4627,7 +4602,7 @@ namespace DotNetWikiBot
 			standardOutput.AutoFlush = true;
 			Console.SetOut(standardOutput);
 		}
-		
+
 		/// <summary>Function loads localized bot interface messages from 
 		/// "DotNetWikiBot.i18n.xml" file. Function is called in Bot class constructor, 
 		/// but can also be called manually to change interface language at runtime.</summary>
@@ -4660,7 +4635,7 @@ namespace DotNetWikiBot
 			}
 			return true;
 		}
-		
+
 		/// <summary>The function gets localized (translated) form of the specified bot
 		/// interface message.</summary>
 		/// <param name="message">Message itself, placeholders for substituted parameters are
@@ -4678,7 +4653,7 @@ namespace DotNetWikiBot
 				return message;
 			}
 		}
-		
+
 		/// <summary>This function asks user to confirm next action. The message
 		/// "Would you like to proceed (y/n/a)? " is displayed and user response is
 		/// evaluated. Make sure to set "askConfirm" variable to "true" before
@@ -4708,7 +4683,7 @@ namespace DotNetWikiBot
 			else
 				return false;
 		}
-		
+
 		/// <summary>This auxiliary function counts the occurrences of specified string
 		/// in specified text. This count is often needed, but strangely there is no
 		/// such function in .NET Framework's String class.</summary>
@@ -4735,7 +4710,7 @@ namespace DotNetWikiBot
 			}
 			return matches;
 		}
-		
+
 		/// <summary>This auxiliary function returns the zero-based indexes of all occurrences
 		/// of specified string in specified text.</summary>
 		/// <param name="text">String to look in.</param>
@@ -4761,7 +4736,7 @@ namespace DotNetWikiBot
 			}
 			return positions;
 		}
-		
+
 		/// <summary>This auxiliary function returns portion of the string which begins
 		/// with some specified substring and ends with some specified substring.</summary>
 		/// <param name="src">Source string.</param>
@@ -4774,7 +4749,7 @@ namespace DotNetWikiBot
 		{
 			return GetStringPortionEx(src, startMark, endMark, false, false, true);
 		}
-		
+
 		/// <summary>This auxiliary function returns portion of the string which begins
 		/// with some specified substring and ends with some specified substring.</summary>
 		/// <param name="src">Source string.</param>
@@ -4796,7 +4771,7 @@ namespace DotNetWikiBot
 				throw new ArgumentNullException("src");
 			int startPos = 0;
 			int endPos = src.Length;
-			
+
 			if (!string.IsNullOrEmpty(startMark)) {
 				startPos = src.IndexOf(startMark);
 				if (startPos == -1) {
@@ -4808,7 +4783,7 @@ namespace DotNetWikiBot
 				else if (removeStartMark)
 					startPos += startMark.Length;
 			}
-			
+
 			if (!string.IsNullOrEmpty(endMark)) {
 				endPos = src.IndexOf(endMark, startPos);
 				if (endPos == -1) {
@@ -4820,10 +4795,10 @@ namespace DotNetWikiBot
 				else if (!removeEndMark)
 					endPos += endMark.Length;
 			}
-			
+
 			return src.Substring(startPos, endPos - startPos);
 		}
-		
+
 		/// <summary>This auxiliary function makes the first letter in specified string upper-case.
 		/// This is often required, but strangely there is no such function in .NET Framework's
 		/// String class.</summary>
@@ -4833,7 +4808,7 @@ namespace DotNetWikiBot
 		{
 			return char.ToUpper(str[0]) + str.Substring(1);
 		}
-		
+
 		/// <summary>This auxiliary function makes the first letter in specified string lower-case.
 		/// This is often required, but strangely there is no such function in .NET Framework's
 		/// String class.</summary>
@@ -4843,14 +4818,14 @@ namespace DotNetWikiBot
 		{
 			return char.ToLower(str[0]) + str.Substring(1);
 		}
-		
+
 		/// <summary>Suspends execution for specified number of seconds.</summary>
 		/// <param name="seconds">Number of seconds to wait.</param>
 		public static void Wait(int seconds)
 		{
 			Thread.Sleep(seconds * 1000);
 		}
-		
+
 		/// <summary>This internal function switches unsafe HTTP headers parsing on or off.
 		/// This is needed to ignore unimportant HTTP protocol violations,
 		/// committed by misconfigured web servers.</summary>
@@ -4867,7 +4842,7 @@ namespace DotNetWikiBot
 			config.Save();
 			System.Configuration.ConfigurationManager.RefreshSection("system.net/settings");
 		}
-		
+
 		/// <summary>This internal function clears the CanonicalizeAsFilePath attribute in
 		/// .NET UriParser to fix a major .NET bug when System.Uri incorrectly strips trailing 
 		/// dots in URIs. The bug was discussed in details at:
@@ -4894,7 +4869,7 @@ namespace DotNetWikiBot
 				}
 			}
 		}
-		
+
 		/// <summary>This internal function removes all attributes from root XML/XHTML element
 		/// (XML namespace declarations, schema links, etc.) for easy processing.</summary>
 		/// <returns>Returns document without unnecessary declarations.</returns>
@@ -4908,7 +4883,7 @@ namespace DotNetWikiBot
 				return xmlSource.Remove(firstSpacePos, firstCloseTagPos - firstSpacePos);
 			return xmlSource;
 		}
-		
+
 		/// <summary>This internal function initializes web client to get resources
 		/// from web.</summary>
 		public static void InitWebClient()
@@ -4919,7 +4894,7 @@ namespace DotNetWikiBot
 			wc.Headers.Add("Content-Type", webContentType);
 			wc.Headers.Add("User-agent", botVer);
 		}
-		
+
 		/// <summary>This internal wrapper function gets web resource in a fault-tolerant manner.
 		/// It should be used only in simple cases, because it sends no cookies, it doesn't support
 		/// traffic compression and lacks other special features.</summary>
@@ -4942,11 +4917,11 @@ namespace DotNetWikiBot
 					if (errorCounter > retryTimes)
 						throw;
 					string message = e.Message;
-					if (Regex.IsMatch(message, ": \\(50[02349]\\) ")) {		// Remote problem
+					if (Regex.IsMatch(message, ": \\(50[02349]\\) ")) {    // Remote problem
 						Console.Error.WriteLine(message + " " + Bot.Msg("Retrying in 60 seconds."));
 						Thread.Sleep(60000);
 					}
-					else if (message.Contains("Section=ResponseStatusLine")) {	// Squid problem
+					else if (message.Contains("Section=ResponseStatusLine")) {    // Squid problem
 						SwitchUnsafeHttpHeaderParsing(true);
 						Console.Error.WriteLine(message + " " + Bot.Msg("Retrying in 60 seconds."));
 						Thread.Sleep(60000);
